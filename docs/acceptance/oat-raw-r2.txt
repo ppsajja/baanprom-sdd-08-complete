@@ -1,0 +1,148 @@
+# ผลดิบของ OAT R2 คำสั่งและผลที่เครื่องพิมพ์ (รันจริง) เครื่องทดสอบ CPU 2 ตัว PostgreSQL 16 ติดตั้งจาก export สะอาด เวลาเครื่อง 2026-10-24 16:47
+# เบอร์ ชื่อ ที่อยู่ทั้งหมดเป็นข้อมูลทดสอบสมมติจาก uat_seed.py หลังบ้าน python -m app.ops.serve --workers 2 โหมด production
+
+## OAT-1 ติดตั้ง
+venv ใหม่และติดตั้ง requirements 12 วินาที ได้รุ่น: fastapi==0.162.0 httpx==0.28.1 psycopg==3.3.6 pytest==9.1.1 SQLAlchemy==2.1.6 uvicorn==0.54.0 
+188 passed, 1 warning in 43.09s
+ Test Files  39 passed (39)
+      Tests  78 passed (78)
+✓ built in 2.38s
+{'customers': 30, 'technicians': 10, 'slots': 220, 'accounts': 40}
+$ curl -s http://127.0.0.1:8040/health
+{"ok":true}
+$ curl -s http://127.0.0.1:8040/ready
+{"ok":true,"database":"ok"}
+$ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8040/docs
+404
+
+$ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8040/metrics
+403
+
+$ curl -s -H "X-Ops-Token: $TOKEN" http://127.0.0.1:8040/ops/integrations | python3 -c "import json,sys; print([(r['kind'], r['adapter'], r['mock']) for r in json.load(sys.stdin)])"
+[('payment', 'fake', True), ('sms', 'mock', True), ('line', 'mock', True), ('map', 'mock', True), ('llm', 'mock', True)]
+
+## OAT-2 เฝ้าดูและแจ้งคนเวร (FAKE_GATEWAY_MODE=declined PAGER_WEBHOOK_URL=http://127.0.0.1:9099/page)
+server start 16:49:50
+traffic start 2026-10-24T16:50:01
+minute 1 16:50 codes {402: 10, 200: 90} done 16:50:02
+minute 2 16:51 codes {402: 10, 200: 90} done 16:51:02
+minute 3 16:52 codes {402: 10, 200: 90} done 16:52:02
+minute 4 16:53 codes {402: 10, 200: 90} done 16:53:03
+minute 5 16:54 codes {402: 10, 200: 90} done 16:54:02
+minute 6 16:55 codes {402: 10, 200: 90} done 16:55:03
+traffic end 2026-10-24T16:56:01
+ข้อความที่เครื่องรับได้:
+{"received_at": "2026-10-24T16:55:50", "body": {"kind": "failure_rate", "text": "คำขอล้มเหลวเกิน 5 ใน 100 ติดต่อกัน 5 นาที เปิด docs/srs/operations.md", "at": "2026-10-24T16:55:49.946008"}}
+ตัวนับจาก GET /metrics รวมทุก endpoint ต่อนาที:
+2026-10-24T16:49:00 requests 1 failures 0
+2026-10-24T16:50:00 requests 101 failures 10
+2026-10-24T16:51:00 requests 100 failures 10
+2026-10-24T16:52:00 requests 100 failures 10
+2026-10-24T16:53:00 requests 100 failures 10
+2026-10-24T16:54:00 requests 100 failures 10
+
+## OAT-3 คำสั่งของคนเวรในคู่มือรับมือเหตุ รุ่น 1.4 (เหตุการณ์ที่ 7 ถึง 9 ของ R2)
+$ curl -s -H "X-Ops-Token: $TOKEN" http://127.0.0.1:8040/ops/integrations | python3 -c "import json,sys; print(len(json.load(sys.stdin)), 'ระบบภายนอก')"
+5 ระบบภายนอก
+
+$ curl -s -H "X-Ops-Token: $TOKEN" 'http://127.0.0.1:8040/ops/notifications/outbox?limit=3' | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d), 'ข้อความ ช่องที่มี', sorted(d[0]) if d else [])"
+3 ข้อความ ช่องที่มี ['at', 'channel', 'text', 'to']
+
+$ psql -h /tmp -p 5433 -U postgres -d bp08oat -c "SELECT channel, result, fallback, count(*) FROM notification_deliveries GROUP BY 1, 2, 3 ORDER BY 1, 2;"
+ channel | result | fallback | count 
+---------+--------+----------+-------
+ sms     | sent   | f        |    60
+(1 row)
+
+
+$ psql -h /tmp -p 5433 -U postgres -d bp08oat -c "SELECT technician_id, count(*) FROM job_assignments WHERE response IN ('rejected', 'no_response') AND offered_at > now() - interval '30 days' GROUP BY 1;"
+ technician_id | count 
+---------------+-------
+(0 rows)
+
+
+$ psql -h /tmp -p 5433 -U postgres -d bp08oat -c "SELECT kind, count(*) FROM reconciliation_items GROUP BY 1;"
+ kind | count 
+------+-------
+(0 rows)
+
+
+$ psql -h /tmp -p 5433 -U postgres -d bp08oat -c "SELECT count(*) FROM otp_challenges WHERE created_at > now() - interval '1 hour' AND sent;"
+ count 
+-------
+     0
+(1 row)
+
+
+$ curl -s -H "X-Finance-Token: $FIN" http://127.0.0.1:8040/finance/refunds/follow-up
+[]
+$ curl -s -o /dev/null -w '%{http_code}\n' -H "X-Ops-Token: $TOKEN" http://127.0.0.1:8040/finance/refunds/follow-up
+403
+
+## OAT-4 สำรองและกู้คืน (pg_dump ระหว่างระบบเปิด สร้างการจองหลังสำเนา 3 รายการ ลูกค้า 1 รายขอลบหลังสำเนา)
+ก่อนสำเนา จองงาน 61
+สำเนา 90393 ไบต์ เวลา 16:56:10
+หลังสำเนา จองงาน [62, 63, 64]
+ขอลบข้อมูลลูกค้า 24 202
+เบอร์ของลูกค้า 24 ในตารางลูกค้าหลังขอลบ [('',)]
+erased_again [24]
+เริ่มกู้จนระบบตอบ /ready: 2.4 วินาที อายุสำเนาตอนเริ่มกู้: 3.2 วินาที
+$ curl -s http://127.0.0.1:8040/ready
+{"ok":true,"database":"ok"}
+$ psql -h /tmp -p 5433 -U postgres -d bp08oat_restore -tc "SELECT 'งานที่มีหลังกู้', count(*) FROM jobs; SELECT 'เบอร์ของลูกค้า 24 หลังกู้และลบซ้ำ', phone FROM customers WHERE id = 24;"
+ งานที่มีหลังกู้ |    61
+
+ เบอร์ของลูกค้า 24 หลังกู้และลบซ้ำ | 
+
+
+## OAT-5 ระบบภายนอกไม่ตอบ ทีละระบบ
+### แผนที่ (IF-03) MOCK_MAP_MODE=down
+แผนที่ไม่ตอบ: ค้นหาได้ 200 ช่าง 6 คน ใช้เวลา 0.18 วินาที
+เพิ่มที่อยู่ระหว่างแผนที่ไม่ตอบ: 503 ระบบแผนที่ขัดข้อง กรุณาลองใหม่อีกครั้ง
+log ของหลังบ้าน map_fallback: 1 บรรทัด
+### LINE (IF-02) MOCK_LINE_MODE=down
+ลูกค้า 04 เลือก LINE แล้วจองงาน #65 รอรอบส่งข้อความของงานเบื้องหลัง
+บันทึกการส่งของลูกค้า: [('line', 'failed', False), ('sms', 'sent', True)]
+### SMS (IF-02) MOCK_SMS_MODE=down
+จองงาน #66 ขณะ SMS ไม่ตอบ รอ 2 รอบของงานเบื้องหลัง
+ข้อความของงาน (ผู้รับ ครั้งที่ลอง ส่งแล้ว เลิกส่ง): [('customer', 1, False, False), ('technician', 1, False, False)]
+จำนวนข้อความของงานนี้ 2 (ไม่สร้างซ้ำ) ส่งซ้ำทุก 5 นาที ไม่เกิน 6 ครั้ง (REQ-QA-010)
+### gateway (IF-01) FAKE_GATEWAY_MODE=timeout FAKE_GATEWAY_INQUIRY=timeout
+gateway ไม่ตอบ: กดยืนยัน 3 ครั้ง ได้ [202, 202, 202] งาน [(67, 'pending_payment')] การชำระ [('BP-67-fd61f159', 'pending')]
+## OAT-7 ปิดผู้ช่วยโดยไม่ deploy ด้วยกุญแจของ call center และผู้ช่วยปิดเองเมื่อโมเดลไม่ใช่รุ่นที่ผ่าน eval
+$ curl -s -X POST -H "X-Call-Center-Token: $CC" -H 'Content-Type: application/json' -d '{"enabled": false}' http://127.0.0.1:8040/call-center/assistant/switch
+{"enabled":false,"at":"2026-10-24T16:59:46.731025"}
+$ curl -s http://127.0.0.1:8040/assistant/status
+{"enabled":false,"message":"ผู้ช่วยปิดชั่วคราว กรุณาติดต่อเจ้าหน้าที่","call_center_tel":"02-000-0000","model_version":"mock-1.1","accepted_model":"mock-1.1"}
+คำสั่งปิดถึงผลที่ลูกค้าเห็น 0.13 วินาที
+$ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "X-Ops-Token: $TOKEN" -H 'Content-Type: application/json' -d '{"enabled": true}' http://127.0.0.1:8040/call-center/assistant/switch
+403
+
+$ curl -s -X POST -H "X-Call-Center-Token: $CC" -H 'Content-Type: application/json' -d '{"enabled": true}' http://127.0.0.1:8040/call-center/assistant/switch
+{"enabled":true,"at":"2026-10-24T16:59:47.026813"}
+$ curl -s http://127.0.0.1:8040/ready
+{"ok":false,"database":"ok","integrations_not_configured":["llm"]}
+$ curl -s http://127.0.0.1:8040/assistant/status
+{"enabled":false,"message":"ผู้ช่วยปิดชั่วคราว (รุ่นโมเดลยังไม่ผ่านการตรวจ) กรุณาติดต่อเจ้าหน้าที่","call_center_tel":"02-000-0000","model_version":"http:none","accepted_model":"mock-1.1"}
+## OAT-8 สลับระบบภายนอกเป็นตัวจริงด้วยค่าตั้ง (ไม่เรียกผู้ให้บริการจริง)
+$ curl -s http://127.0.0.1:8040/ready
+{"ok":false,"database":"ok","integrations_not_configured":["payment","sms"]}
+$ curl -s http://127.0.0.1:8040/ready
+{"ok":true,"database":"ok"}
+$ curl -s -H "X-Ops-Token: $TOKEN" http://127.0.0.1:8040/ops/integrations | python3 -c "import json,sys; print([(r['kind'], r['adapter'], r['mock'], r['configured']) for r in json.load(sys.stdin)])"
+[('payment', 'http', False, True), ('sms', 'http', False, True), ('line', 'mock', True, True), ('map', 'mock', True, True), ('llm', 'mock', True, True)]
+
+## OAT-9 ข้อความไม่หายเมื่อหลังบ้านดับกลางทาง (REQ-OP-008)
+จองงาน [68, 69] ข้อความที่ยังไม่ส่ง 4 ข้อความ เวลา 17:00:03
+JOBS=68,69
+หยุดหลังบ้านทันที (kill -9) เวลา 17:00:05 แล้วเริ่มใหม่
+หลังเริ่มหลังบ้านใหม่: ข้อความของงาน 68,69 ส่งแล้ว 4 จาก 4 เวลา 17:01:08
+## OAT-6 ความปลอดภัยเชิงปฏิบัติการ (log ของทุกรอบข้างบน)
+log 16 ไฟล์ 823 บรรทัด เป็น log ของแอป (JSON) 22 บรรทัด ค้นพบ: {'เบอร์ 000-000-': 0, 'ชื่อลูกค้า': 0, 'ที่อยู่': 0, 'พิกัด 13.7': 0, 'LINE U-': 0}
+คำขอต่องานและที่อยู่ของคนอื่น 3 ครั้ง ได้ [403, 403, 403] บันทึกการปฏิเสธเพิ่ม 3 รายการ
+กุญแจแยกบทบาท: {'call center เปิด /finance': 403, 'Finance เปิด /call-center': 403, 'Ops เปิด /finance': 403, 'Finance เปิด /finance': 200}
+# คำตอบ 500 ใน log ของหลังบ้านทุกรอบ: 0
+# คำตอบ 503 ที่ตั้งใจให้เกิด (แผนที่ไม่ตอบ และระบบภายนอกที่ตั้งค่าไม่ครบ):
+"POST /me/addresses HTTP/1.1" 503 Service Unavailable
+"GET /ready HTTP/1.1" 503 Service Unavailable
+"GET /ready HTTP/1.1" 503 Service Unavailable

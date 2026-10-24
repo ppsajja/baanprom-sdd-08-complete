@@ -93,7 +93,7 @@ def _resolve(db, run: ReconciliationRun, refund: Refund, to_result: str, now: da
 
 
 def reconcile(db, report_date: date, text: str, now: datetime) -> tuple[ReconciliationRun, bool]:
-    """คืน (ผลกระทบยอด, นำเข้าไปแล้วหรือยัง) รายงานเดิมของวันเดิมที่นำเข้าแล้ว ไม่ทำซ้ำ (AC-13-09)"""
+    """คืน (ผลกระทบยอด, นำเข้าไปแล้วหรือยัง) รายงานเดิมของวันเดิมที่นำเข้าแล้ว ไม่ทำซ้ำ (AC-13-08)"""
     digest = hashlib.sha256(text.strip().encode()).hexdigest()
     d0 = datetime(report_date.year, report_date.month, report_date.day)
     old = db.scalars(select(ReconciliationRun).where(ReconciliationRun.report_date == d0,

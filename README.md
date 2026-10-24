@@ -11,8 +11,8 @@ repo ตัวอย่างของรายวิชา 517511-266 Requireme
 repo นี้คือสภาพสุดท้ายของงานกลุ่มตัวอย่าง (กลุ่ม X) หลังจบวิชา ระบบที่ส่งมอบครบตาม TOR ของ R2 (docs/contract/tor-r2.md) และตรวจรับครบสี่งวด (งวด 4 รับแบบมีเงื่อนไข)
 ต่อจาก baanprom-sdd-07-r1-done (ประวัติ commit ของ repo 07 อยู่ครบใน repo นี้) และเพิ่มงานสองส่วน
 
-- ส่วน A (แท็ก r2-part-a) ตัวตนด้วย OTP (UC-01 UC-02) ช่างรับหรือปฏิเสธงานและจับคู่ช่างใหม่ (UC-12 UC-05) จองช่างคนเดิม คิวข้อความในฐานข้อมูลและการรันหลาย process ตั้ง Baseline B6
-- ส่วน B (แท็ก b7) ตารางเวลาของช่าง (UC-04) การแจ้งเตือนทาง SMS หรือ LINE (UC-10) การให้คะแนน (UC-11) การกระทบยอด (UC-13) ตัวเชื่อมระบบภายนอกที่สลับเป็นของจริงได้ด้วยค่าตั้ง TOR การตรวจรับรายงวด เอกสารส่งมอบ ตั้ง Baseline B7
+- ส่วน A (branch checkpoint/r2-part-a) ตัวตนด้วย OTP (UC-01 UC-02) ช่างรับหรือปฏิเสธงานและจับคู่ช่างใหม่ (UC-12 UC-05) จองช่างคนเดิม คิวข้อความในฐานข้อมูลและการรันหลาย process ตั้ง Baseline B6
+- ส่วน B (branch checkpoint/b7) ตารางเวลาของช่าง (UC-04) การแจ้งเตือนทาง SMS หรือ LINE (UC-10) การให้คะแนน (UC-11) การกระทบยอด (UC-13) ตัวเชื่อมระบบภายนอกที่สลับเป็นของจริงได้ด้วยค่าตั้ง TOR การตรวจรับรายงวด เอกสารส่งมอบ ตั้ง Baseline B7
 
 การเดินของคน คำตอบของเจ้าของเรื่อง การประชุม และการลงนาม เป็นข้อมูลสมมติ ผลที่วัดด้วยเครื่อง (test eval เดินซ้อม UAT OAT ทดสอบโหลด) มาจากการรันจริงทุกตัว รวมทั้งรอบที่ไม่ผ่าน
 
@@ -38,7 +38,7 @@ repo นี้คือสภาพสุดท้ายของงานกล
 
 ## อะไรใหม่เมื่อเทียบกับ repo ก่อนหน้า (baanprom-sdd-07-r1-done)
 
-ส่วน A: commit "R2 ส่วน A" (แท็ก r2-part-a)
+ส่วน A: commit "R2 ส่วน A" (branch checkpoint/r2-part-a)
 
 | เรื่อง | ไฟล์ | มาจาก |
 |---|---|---|
@@ -49,7 +49,7 @@ repo นี้คือสภาพสุดท้ายของงานกล
 | ทดสอบโหลดบน PostgreSQL หลาย process | docs/acceptance/load-test-r2.md | EV-052 |
 | Baseline B6 | docs/srs/baseline.md | EV-051 |
 
-ส่วน B: commit "R2 ส่วน B" และ commit ของการตรวจรับและส่งมอบ (แท็ก b7)
+ส่วน B: commit "R2 ส่วน B" และ commit ของการตรวจรับและส่งมอบ (branch checkpoint/b7)
 
 | เรื่อง | ไฟล์ | มาจาก |
 |---|---|---|
@@ -66,9 +66,9 @@ repo นี้คือสภาพสุดท้ายของงานกล
 | เอกสารส่งมอบ: คู่มือผู้ใช้ห้าบทบาท คู่มือติดตั้ง รายการของจำลอง แผน hypercare และระยะรับประกัน | docs/handover/ | TOR งวด 4 |
 | Baseline B7 | docs/srs/baseline.md | |
 
-ดู diff ของแต่ละส่วน: `git diff b5 r2-part-a --stat` (ส่วน A) และ `git diff r2-part-a b7 --stat` (ส่วน B)
+ดู diff ของแต่ละส่วน: `git diff origin/checkpoint/b5 origin/checkpoint/r2-part-a --stat` (ส่วน A) และ `git diff origin/checkpoint/r2-part-a origin/checkpoint/b7 --stat` (ส่วน B)
 
-> แท็ก (เช่น b5, r2-part-a, b7) ใช้ได้เมื่อ clone repo นี้ ถ้าสร้างด้วยปุ่ม Use this template บน GitHub จะไม่ได้ประวัติ commit และแท็กมาด้วย
+> จุดในประวัติ (เช่น checkpoint/b5, checkpoint/r2-part-a, checkpoint/b7) เป็น branch ชื่อขึ้นต้น checkpoint/ เปิดได้ด้วย `git checkout checkpoint/ชื่อ` หลัง clone ถ้าสร้าง repo ของกลุ่มด้วยปุ่ม Use this template ให้ติ๊ก Include all branches
 
 ## ระบบที่ส่งมอบ แยกตาม use case
 
@@ -169,7 +169,7 @@ npm run dev
 - eval: 21 จาก 21 เกณฑ์ ชุดลับ 50 จาก 50
 - เดินซ้อม scenario R1 และ R2 ผ่าน API: 22 จาก 22 (docs/acceptance/uat-dryrun-r2-full.txt)
 - OAT R2: docs/acceptance/oat-results-r2.md
-- ถ้าเปิดแท็ก r2-part-a จะได้ 139 passed และ 63 passed
+- ถ้าเปิด branch checkpoint/r2-part-a จะได้ 139 passed และ 63 passed
 
 ## สิ่งที่ยังเป็นของจำลอง
 

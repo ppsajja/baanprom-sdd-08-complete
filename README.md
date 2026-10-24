@@ -23,18 +23,18 @@ repo นี้คือสภาพสุดท้ายของงานกล
 
 ## ชุด repo ทั้ง 8
 
-แต่ละ repo คือจุดเริ่มของบทหนึ่ง และเป็นเฉลยของบทก่อนหน้า
+แต่ละ repo คือจุดเริ่มของบทหนึ่ง และเป็นเฉลยของบทก่อนหน้า repo ถัดไปจึงเป็นเฉลยของงานในบทนี้
 
-| ลำดับ | ชื่อ repo | ใช้เริ่มบท |
+| repo | ใช้เริ่มบท | ข้างในคือเฉลยของ |
 |---|---|---|
-| 01 | baanprom-sdd-01-spec | Modern Specification และ SDD |
-| 02 | baanprom-sdd-02-build | AI Build from Spec |
-| 03 | baanprom-sdd-03-vv | Verification, Validation และ Change |
-| 04 | baanprom-sdd-04-ops | Operational, Security และ Privacy |
-| 05 | baanprom-sdd-05-ai | Data, AI และ Agent |
-| 06 | baanprom-sdd-06-accept | RE in One Line และการตรวจรับ |
-| 07 | baanprom-sdd-07-r1-done | บทเสริม การตรวจรับและการส่งมอบ |
-| 08 | baanprom-sdd-08-complete (repo นี้) | สภาพสุดท้ายหลังจบวิชา |
+| [baanprom-sdd-01-spec](https://github.com/ppsajja/baanprom-sdd-01-spec) | Modern Specification และ SDD | ชิ้นงานบท 1 ถึง 7 (Problem Framing ถึง Integrated Modelling) |
+| [baanprom-sdd-02-build](https://github.com/ppsajja/baanprom-sdd-02-build) | AI Build from Spec | Modern Specification และ SDD: spec plan tasks ที่กลุ่มเขียนเอง และ Baseline B1 |
+| [baanprom-sdd-03-vv](https://github.com/ppsajja/baanprom-sdd-03-vv) | Verification, Validation และ Change | AI Build from Spec: โค้ดและ test ที่ AI สร้าง ac-results gaps CR-01 CR-02 |
+| [baanprom-sdd-04-ops](https://github.com/ppsajja/baanprom-sdd-04-ops) | Operational, Security และ Privacy | V&V และ Change: RTM mockup CR-03 ถึง CR-06 Baseline B2 และ R1 ครบ (003 004) |
+| [baanprom-sdd-05-ai](https://github.com/ppsajja/baanprom-sdd-05-ai) | Data, AI และ Agent | Operational, Security และ Privacy: CR-07 อนุมัติ และ Baseline B3 |
+| [baanprom-sdd-06-accept](https://github.com/ppsajja/baanprom-sdd-06-accept) | RE in One Line และการตรวจรับ | Data, AI และ Agent: ผู้ช่วย AI UC-14 (CR-09) และ Baseline B4 |
+| [baanprom-sdd-07-r1-done](https://github.com/ppsajja/baanprom-sdd-07-r1-done) | บทเสริม การตรวจรับและการส่งมอบ | RE in One Line และการตรวจรับ: ตรวจรับ R1 (CR-10) และ Baseline B5 |
+| **baanprom-sdd-08-complete** (repo นี้) | (ระบบสมบูรณ์ของวิชา) | บทเสริม การตรวจรับและการส่งมอบ: R2 ครบทุก UC ส่งมอบตาม TOR และ Baseline B7 |
 
 ## อะไรใหม่เมื่อเทียบกับ repo ก่อนหน้า (baanprom-sdd-07-r1-done)
 

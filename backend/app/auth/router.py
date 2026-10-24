@@ -1,6 +1,8 @@
 """CR-11 endpoint ของ UC-01 และ UC-02 (specs/006-identity/plan.md ข้อ 4) ทุกตัวอยู่ในบัญชี endpoint ของ operations.md
 POST /auth/otp, POST /auth/verify, POST /auth/register, POST /auth/logout, GET /me, POST /me/addresses, GET /me/jobs
-POST /ops/technicians/{id}/account (X-Ops-Token) ออกบัญชีช่าง"""
+POST /ops/technicians/{id}/account (X-Ops-Token) ออกบัญชีช่าง
+CR-18 (R2 ส่วน B): หน้าจัดการที่อยู่ (F-17) GET /me/addresses, POST /me/addresses, DELETE /me/addresses/{id}
+พิกัดหาจากข้อความที่อยู่ผ่าน IF-03 (app/maps ปิด GAP-40) หน้าจอไม่ส่งพิกัด ถ้าผู้เรียกส่ง lat lng มา (เครื่องมือของทีมและ test เดิม) ใช้ค่านั้น"""
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -38,10 +40,12 @@ MESSAGES = {
     "already_registered": "เบอร์นี้ลงทะเบียนแล้ว กรุณาเข้าสู่ระบบ",
     "notify_down": "ระบบส่งข้อความขัดข้อง กรุณาลองใหม่อีกครั้ง",
     "not_found": "ไม่พบช่าง",
+    "address_not_found": "ไม่พบตำแหน่งของที่อยู่นี้ กรุณาใส่ชื่อเขตหรืออำเภอด้วย",
+    "map_down": "ระบบแผนที่ขัดข้อง กรุณาลองใหม่อีกครั้ง",
 }
 STATUS = {"invalid_phone": 422, "invalid_role": 422, "too_soon": 429, "too_many": 429, "wrong_code": 401,
           "expired": 410, "locked": 410, "used": 410, "not_verified": 409, "already_registered": 409,
-          "notify_down": 503, "not_found": 404}
+          "notify_down": 503, "not_found": 404, "address_not_found": 422, "map_down": 503}
 
 
 def error(e: AuthError) -> JSONResponse:
@@ -63,14 +67,28 @@ class RegisterIn(BaseModel):
     challenge_id: int
     name: str = Field(min_length=1, max_length=100)
     address_text: str = Field(min_length=1, max_length=200)
-    lat: float
-    lng: float
+    lat: float | None = None  # CR-18: ไม่บังคับแล้ว ระบบหาพิกัดจากข้อความผ่าน IF-03
+    lng: float | None = None
 
 
 class AddressIn(BaseModel):
     text: str = Field(min_length=1, max_length=200)
-    lat: float
-    lng: float
+    lat: float | None = None
+    lng: float | None = None
+
+
+def locate(text: str, lat: float | None, lng: float | None) -> tuple[float, float]:
+    """CR-18 (GAP-40 REQ-FN-074): พิกัดจาก IF-03 ส่งเฉพาะข้อความที่อยู่ ไม่ส่งชื่อหรือเบอร์ (REQ-PRV-011 รุ่น 1.4)"""
+    from app import maps
+    if lat is not None and lng is not None:
+        return lat, lng
+    try:
+        point = maps.geocode(text)
+    except maps.MapTimeout:
+        raise AuthError("map_down")
+    if point is None:
+        raise AuthError("address_not_found")
+    return point
 
 
 class TechAccountIn(BaseModel):
@@ -122,8 +140,9 @@ def verify(body: VerifyIn, db: Session = Depends(get_db), now: datetime = Depend
 def register(body: RegisterIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # รองรับ REQ-FN-058, REQ-PRV-011 (พิกัดเก็บเพื่อคำนวณระยะ BR-03 เท่านั้น)
     try:
+        lat, lng = locate(body.address_text, body.lat, body.lng)
         token, sess, customer = service.register_customer(db, body.challenge_id, body.name, body.address_text,
-                                                          body.lat, body.lng, now)
+                                                          lat, lng, now)
     except AuthError as e:
         return error(e)
     return session_out(token, sess, customer.name)
@@ -150,21 +169,53 @@ def me(actor: Actor = Depends(current_actor), db: Session = Depends(get_db)):
     return out
 
 
+@router.get("/me/addresses")
+def list_addresses(actor: Actor = Depends(current_customer), db: Session = Depends(get_db)):
+    # CR-18 REQ-FN-074 หน้าจัดการที่อยู่ (UI-02-04) can_delete มาจากระบบ หน้าจอไม่ตัดสินเอง
+    used = set(db.scalars(select(Job.address_id).where(Job.customer_id == actor.subject_id)).all())
+    rows = addresses_of(db, actor.subject_id)
+    return [{**a, "can_delete": a["address_id"] not in used and len(rows) > 1} for a in rows]
+
+
 @router.post("/me/addresses", status_code=201)
 def add_address(body: AddressIn, actor: Actor = Depends(current_customer), db: Session = Depends(get_db)):
-    # รองรับ REQ-FN-058 (AS-03 ลูกค้าหนึ่งคนมีหลายที่อยู่ Q-29 เลือกบน UI-07-01)
-    a = ServiceAddress(customer_id=actor.subject_id, text=body.text.strip(), lat=body.lat, lng=body.lng)
+    # รองรับ REQ-FN-058 (AS-03 ลูกค้าหนึ่งคนมีหลายที่อยู่ Q-29 เลือกบน UI-07-01) CR-18 REQ-FN-074 พิกัดจาก IF-03
+    try:
+        lat, lng = locate(body.text, body.lat, body.lng)
+    except AuthError as e:
+        return error(e)
+    a = ServiceAddress(customer_id=actor.subject_id, text=body.text.strip(), lat=lat, lng=lng)
     db.add(a)
     db.commit()
     return {"address_id": a.id, "text": a.text}
 
 
+ADDRESS_MESSAGES = {"in_use": "ที่อยู่นี้มีงานอ้างอยู่ ลบไม่ได้", "last_one": "ต้องมีที่อยู่ให้บริการอย่างน้อย 1 แห่ง"}
+
+
+@router.delete("/me/addresses/{address_id}")
+def delete_address(address_id: int, actor: Actor = Depends(current_customer), db: Session = Depends(get_db),
+                   now: datetime = Depends(get_now)):
+    # CR-18 REQ-FN-074: ลบได้เฉพาะที่อยู่ของตัวเองที่ไม่มีงานอ้าง และต้องเหลืออย่างน้อย 1 แห่ง
+    from app.ops import audit
+    a = db.get(ServiceAddress, address_id)
+    if a is None or a.customer_id != actor.subject_id:
+        raise audit.deny(db, "customer", actor.subject_id, None, "DELETE /me/addresses/{id}", now)
+    if db.scalars(select(Job.id).where(Job.address_id == a.id)).first() is not None:
+        return JSONResponse({"reason": "in_use", "message": ADDRESS_MESSAGES["in_use"]}, status_code=409)
+    if len(addresses_of(db, actor.subject_id)) <= 1:
+        return JSONResponse({"reason": "last_one", "message": ADDRESS_MESSAGES["last_one"]}, status_code=409)
+    db.delete(a)
+    db.commit()
+    return {"deleted": address_id}
+
+
 @router.get("/me/jobs")
-def my_jobs(actor: Actor = Depends(current_customer), db: Session = Depends(get_db)):
+def my_jobs(actor: Actor = Depends(current_customer), db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # REQ-FN-052 ลูกค้าเห็นงานของตัวเองเท่านั้น (REQ-SEC-010) ช่างแทนที่ปฏิเสธได้ดูจาก can_decline_substitute (REQ-FN-063)
     from app.matching.service import customer_job_view
     jobs = db.scalars(select(Job).where(Job.customer_id == actor.subject_id).order_by(Job.scheduled_start.desc())).all()
-    return [customer_job_view(db, j) for j in jobs]
+    return [customer_job_view(db, j, now) for j in jobs]
 
 
 @ops_router.post("/ops/technicians/{technician_id}/account", status_code=201)

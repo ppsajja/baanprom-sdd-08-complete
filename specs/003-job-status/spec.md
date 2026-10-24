@@ -2,7 +2,7 @@
 
 version: 1.2 | status: approved (CR-10 เข้า Baseline B5 พร้อมการรับ R1) | owner: กลุ่ม X / PO: SH-01 | date: 2569-11-03
 baseline: B3 (2569-10-24) = B2 + CR-07 (เข้า B2 ด้วย CR-05) | supersedes: v1.0 | related: SPEC-BOOKING (specs/002-booking, B2), SPEC-CANCEL (specs/004-cancel-refund, B2) | feature file: job-status.feature v1.2
-Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.1 | mockups: UI-09-01, UI-09-02
+Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.4 | mockups: UI-09-01, UI-09-02
 
 ## Change Log
 
@@ -14,6 +14,7 @@ Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.1 | mock
 | 1.1 | 2569-10-24 | CR-07: อ้าง Constraint กลางรุ่น 1.1 แก้บรรทัด Then ของ AC-09-06 (403 ตาม Q-47) เพิ่ม AC-09-11 ถึง AC-09-14 ปิด Q-38, Q-39 | รอบ Failure Day และประชุมทบทวน EV-045 | กลุ่ม X, SH-01 อนุมัติ |
 | 1.2 | 2569-11-03 | CR-10: ปิด Q-31 (เสร็จสิ้นเมื่อช่างปิดงาน ไม่มีขั้นลูกค้ายืนยัน) AS-11 เป็นการตัดสินที่ยืนยันแล้ว เพิ่ม AC-09-15 แก้ MD-STM-01 (เอา "และลูกค้ายืนยัน" ออก) ย้าย Q-30, Q-32, Q-36 ไป R2 พร้อมเจ้าของ เพิ่ม D-09-04 | เงื่อนไขของ CR-05 ก่อนเปิด R1 ประชุม EV-048 | กลุ่ม X, SH-01 อนุมัติ |
 | 1.3 | 2569-11-23 | CR-11: ช่างมาจากการเข้าสู่ระบบ (UC-01) GET /jobs/{id}/history ตรวจสิทธิ์แล้ว (GAP-24 ปิด) CR-12: ส่วน 9 ปิด Q-30 (ไม่มีการย้อน) Q-32 (ปิดแล้วย้อนหลัง 30 วัน AS-12 ปิด) เพิ่ม AC-09-16 ส่วน 12 UI-09-01 ปุ่มรับงานและปฏิเสธงาน Non-goal "ช่างปฏิเสธงาน" ย้ายไปทำใน specs/007-accept-rematch | ประชุมงวด 1 ของ R2 EV-051 | กลุ่ม X, SH-01 อนุมัติ |
+| 1.4 | 2569-12-10 | CR-18: ส่วน 8 อ้าง Constraint กลางรุ่น 1.4 (ข้อใหม่ไม่เกี่ยวกับ feature นี้นอกจาก REQ-SEC-015 call center อ่านประวัติงานด้วยกุญแจของตัวเอง) ข้อความของ REQ และ AC เดิมไม่เปลี่ยน | ประชุมงวด 2 ของ R2 (EV-053) Baseline B7 |
 
 ## 1. Intent
 
@@ -72,7 +73,7 @@ Customer.phone เป็น PII (REQ-PRV-002) ส่งให้ช่างเ�
 
 ## 8. Constraints
 
-Constraint กลาง: ใช้ทุกข้อใน specs/000-shared/constraints.md รุ่น 1.1 (ห้ามคัดลอกข้อความมาไว้ที่นี่) (เดิมรุ่น 1.0 เปลี่ยนตาม CR-07)
+Constraint กลาง: ใช้ทุกข้อใน specs/000-shared/constraints.md รุ่น 1.4 (ห้ามคัดลอกข้อความมาไว้ที่นี่) (เดิมรุ่น 1.0 เปลี่ยนตาม CR-07) (รุ่น 1.1 เปลี่ยนเป็น 1.4 ตาม CR-18 Baseline B7)
 ข้อยกเว้นของ feature นี้: ไม่มี
 เฉพาะ feature นี้:
 - REQ-SEC-004 ช่างเห็นเบอร์ลูกค้าเฉพาะ 2 ชั่วโมงก่อนนัดจนปิดงาน (ข้อความเต็มอยู่ใน catalogue และอยู่ในส่วน 4 ใช้ร่วมกับ SPEC-BOOKING รอย้ายไปไฟล์กลาง Q-36)

@@ -21,11 +21,24 @@ def health():
 @router.get("/ready")
 def ready(db: Session = Depends(get_db)):
     # REQ-OP-001 / คู่มือเหตุการณ์ที่ 2: แยก "ระบบยังตอบ" ออกจาก "ฐานข้อมูลใช้ได้"
+    # CR-18 REQ-OP-009: เลือกตัวจริงของระบบภายนอกแล้วแต่ตั้งค่าไม่ครบ ตอบ 503 พร้อมชื่อระบบ (ไม่บอกค่าของกุญแจ)
     try:
         db.execute(text("SELECT 1"))
     except Exception:
         return JSONResponse({"ok": False, "database": "unavailable"}, status_code=503)
-    return {"ok": True, "database": "ok"}
+    from app.integrations import status
+    rows = status()
+    broken = [r["kind"] for r in rows if not r["configured"]]
+    if broken:
+        return JSONResponse({"ok": False, "database": "ok", "integrations_not_configured": broken}, status_code=503)
+    return {"ok": True, "database": "ok"}  # รายการตัวจำลองที่ยังใช้อยู่ดูที่ /ops/integrations
+
+
+@router.get("/ops/integrations", dependencies=[Depends(require_ops)])
+def integrations():
+    # CR-18 REQ-OP-009: ระบบภายนอกแต่ละตัวใช้ตัวไหน (รายการก่อนเปิดใช้จริงใน docs/handover/mocks-and-limits.md)
+    from app.integrations import status
+    return status()
 
 
 @router.get("/metrics", dependencies=[Depends(require_ops)])

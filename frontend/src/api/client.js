@@ -161,3 +161,64 @@ export const authApi = {
     return postJson(`/jobs/${jobId}/decline-substitute`)
   },
 }
+
+// ---- R2 ส่วน B ----
+// CR-18 (GAP-32): เจ้าหน้าที่ใช้กุญแจของบทบาทตัวเอง (Finance หรือ call center) เก็บในหน่วยความจำของหน้าเท่านั้น ไม่เก็บลงเครื่อง
+let staff = null
+export function setStaffKey(s) { staff = s }
+function staffCall(path, init = {}) {
+  const headers = { ...(init.headers ?? {}) }
+  if (staff) headers[staff.header] = staff.key
+  return fetch(`${BASE}${path}`, { ...init, headers }).then(readJson)
+}
+function staffPost(path, body) {
+  return staffCall(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) })
+}
+export const STAFF_HEADERS = { finance: 'X-Finance-Token', call_center: 'X-Call-Center-Token' }
+
+// CR-14 UC-04 ช่างจัดตารางเวลา (specs/008-schedule) กฎทั้งหมดอยู่หลังบ้าน (BR-10) หน้าจอแสดงข้อความที่ระบบส่งมา
+export const scheduleApi = {
+  async getSchedule() { return call('/me/schedule') },
+  async addSlot({ start }) { return postJson('/me/slots', { start }) },
+  async closeSlot({ slotId }) { return postJson(`/me/slots/${slotId}/close`) },
+  async addDayOff({ day }) { return postJson('/me/days-off', { day }) },
+  async removeDayOff({ day }) { return call(`/me/days-off/${day}`, { method: 'DELETE' }) },
+}
+
+// CR-15 UC-11 ให้คะแนนช่าง (specs/009-rating) ให้ได้หรือไม่มาจาก can_rate ของระบบ
+export const ratingApi = {
+  async rate({ jobId, stars, comment }) { return postJson(`/jobs/${jobId}/rating`, { stars, comment }) },
+  async myRating() { return call('/me/rating') },
+}
+
+// CR-18 REQ-FN-074 หน้าจัดการที่อยู่ (UI-02-04) พิกัดหาจากข้อความที่อยู่ที่หลังบ้าน (IF-03) หน้าจอไม่ส่งพิกัด
+export const addressApi = {
+  async list() { return call('/me/addresses') },
+  async add({ text }) { return postJson('/me/addresses', { text }) },
+  async remove({ addressId }) { return call(`/me/addresses/${addressId}`, { method: 'DELETE' }) },
+}
+
+// CR-17 UC-10 ตั้งค่าการแจ้งเตือน (specs/011-notifications)
+export const notifyApi = {
+  async get() { return call('/me/notifications') },
+  async setChannel({ channel }) {
+    return call('/me/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel }) })
+  },
+  async startLineLink() { return postJson('/me/notifications/line-link') },
+  async unlinkLine() { return postJson('/me/notifications/line-unlink') },
+}
+
+// CR-16 UC-13 กระทบยอดของ Finance (specs/010-reconciliation) ใช้กุญแจของ Finance
+export const financeApi = {
+  async reconcile({ reportDate, csv }) { return staffPost('/finance/reconciliations', { report_date: reportDate, csv }) },
+  async followUp() { return staffCall('/finance/refunds/follow-up') },
+}
+
+// CR-18 เครื่องมือของ call center (GAP-31 GAP-32) ใช้กุญแจของ call center
+export const callCenterApi = {
+  async getJob({ jobId }) { return staffCall(`/jobs/${jobId}`) },
+  async switchAssistant({ enabled }) { return staffPost('/call-center/assistant/switch', { enabled }) },
+  async tickets() { return staffCall('/call-center/assistant/tickets') },
+  async revertReschedule({ jobId }) { return staffPost(`/call-center/jobs/${jobId}/revert-reschedule`) },
+  async assistantStatus() { return staffCall('/assistant/status') },
+}

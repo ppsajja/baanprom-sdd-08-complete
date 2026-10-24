@@ -2,6 +2,7 @@
 ขั้น 1 รับคำถาม (ใครถาม เปิดไหม เพดาน) | ขั้น 2 รั้วขาเข้าและจำแนกความตั้งใจ | ขั้น 3 ค้นข้อมูลจริง
 ขั้น 4 LLM แต่งคำตอบ (กล่อง AI กล่องเดียว) | ขั้น 5 รั้วขาออก แล้วบันทึก
 ข้อความที่ลูกค้าเห็นซึ่งไม่ได้มาจาก LLM อยู่ที่นี่ที่เดียว (รายการ "ต้องตรง" ของ UI-14-01)"""
+import logging
 import time
 from datetime import datetime
 
@@ -11,10 +12,12 @@ from app import config
 from app.db.models import AssistantConversation, AssistantProposal, AssistantSetting, AssistantTurn
 from app.booking.service import RescheduleRejected
 from app.ops import audit
-from app.privacy import mask_text
+from app.privacy import log_event, mask_text
 from app.assistant import agent, guard, handoff, prompts, records, retrieval, tools
 from app.assistant.intents import classify, FORBIDDEN
-from app.assistant.llm import LLM, LLMRequest, get_llm
+from app.assistant.llm import LLM, LLMReply, LLMRequest, get_llm
+
+_log = logging.getLogger(__name__)
 
 GREETING = ("สวัสดีค่ะ ฉันคือผู้ช่วยอัตโนมัติของบ้านพร้อม ไม่ใช่เจ้าหน้าที่ ตอบได้ 5 เรื่อง คือ สถานะงาน ชื่อช่าง "
             "การยกเลิก การเลื่อนนัด และการคืนเงิน ต้องการคุยกับเจ้าหน้าที่ กดปุ่ม คุยกับเจ้าหน้าที่ ได้ทุกเมื่อ "
@@ -40,13 +43,24 @@ MSG_DECLINED = "ยกเลิกคำขอเลื่อนนัดแล�
 MSG_TOOL_TIMEOUT = "ขออภัย ระบบเลื่อนนัดไม่ตอบ ยังไม่ทราบผล ขอส่งต่อเจ้าหน้าที่ตรวจสอบนะคะ"
 MSG_EXPIRED = "สรุปนี้หมดอายุแล้ว พิมพ์ขอเลื่อนนัดใหม่ได้ค่ะ"
 NO_CANCEL_TOOL = "ผู้ช่วยยกเลิกให้ไม่ได้ค่ะ"
+MSG_REFUND_BANK = "ระยะเวลาที่เงินเข้าบัญชีขึ้นกับธนาคารผู้ออกบัตร"  # CR-19 (Q-65)
+MSG_MODEL_NOT_ACCEPTED = "ผู้ช่วยปิดชั่วคราว (รุ่นโมเดลยังไม่ผ่านการตรวจ) กรุณาติดต่อเจ้าหน้าที่"
 
 
 # ---- REQ-AI-022 ปุ่มหยุด: ค่าอยู่ในฐานข้อมูล เปลี่ยนได้ทันที ไม่ต้อง deploy ----
 
+def model_accepted() -> bool:
+    """CR-19 REQ-AI-023 (ชั้นที่ 3): รุ่นโมเดลที่ใช้อยู่ต้องเป็นรุ่นที่ผ่าน eval ล่าสุด (ASSISTANT_ACCEPTED_MODEL)
+    เปลี่ยนโมเดลหรือสลับเป็นตัวจริงโดยยังไม่รัน eval ผู้ช่วยปิดเอง ไม่ต้องรอให้คนจำได้
+    มีผลในโหมด production (ระบบจริงและเครื่องตรวจรับ) โหมด test และ development ลองโมเดลอื่นได้ เพื่อวัดก่อนรับ"""
+    if config.app_env() != "production":
+        return True
+    return get_llm().model_version == config.assistant_accepted_model()
+
+
 def is_enabled(db) -> bool:
     row = db.get(AssistantSetting, "enabled")
-    return row is None or row.value == "true"
+    return (row is None or row.value == "true") and model_accepted()
 
 
 def set_enabled(db, enabled: bool, now: datetime) -> None:
@@ -92,7 +106,8 @@ def fallback(intent: str, d: dict) -> str:
         return (f"เลื่อนนัดได้ไม่เกิน {r['max']} ครั้งต่องาน ต้องเหลือเวลาก่อนนัดเดิมไม่น้อยกว่า {r['min_hours']} ชั่วโมง "
                 f"งาน #{sid} เลื่อนไปแล้ว {r['used']} ครั้ง")
     if intent == "refund_timing":
-        return "เงินคืนเข้าช่องทางที่ชำระมัดจำค่ะ ขออภัย ยังไม่มีข้อมูลจำนวนวันที่เงินจะเข้า"
+        # CR-19 (Q-65): บอกว่าระยะเวลาขึ้นกับธนาคารผู้ออกบัตร ข้อความเดียวกับประโยคสำหรับลูกค้าใน policies/refund-timing.md
+        return f"เงินคืนเข้าช่องทางที่ชำระมัดจำค่ะ ขออภัย ยังไม่มีข้อมูลจำนวนวันที่เงินจะเข้า {MSG_REFUND_BANK}"
     text = f"งาน #{sid} สถานะ \"{d['status_th']}\" นัดไว้ {when}"
     return text + (" ยังไม่มีข้อมูลเวลาที่ช่างจะถึง" if d["status"] == "en_route" else "")
 
@@ -168,10 +183,15 @@ def handle_message(db, conv: AssistantConversation, text: str, now: datetime, ve
     # CR-09 ข้อ ค1 (Q-56 SH-05): ข้อความของลูกค้าที่ส่งให้ LLM ปิดบังเบอร์ อีเมล เลขบัตรก่อน
     req = LLMRequest(prompts.system_prompt(version), version, intent.name, mask_text(text), facts.data,
                      [{"id": p["id"], "text": p["text"]} for p in facts.policies])
-    reply = llm.generate(req)
+    try:
+        reply = llm.generate(req)
+    except Exception as exc:  # GAP-50 (REQ-QA-010): LLM ไม่ตอบหรือตอบผิด ใช้คำตอบสำรองจากโค้ด ไม่ตอบ 500
+        log_event(_log, "llm_error", conversation_id=conv.id, intent=intent.name, reason=type(exc).__name__,
+                  model_version=getattr(llm, "model_version", ""))
+        reply = LLMReply("", getattr(llm, "model_version", ""))
     answer = reply.text
     # ขั้น 5 รั้วขาออก (REQ-AI-008)
-    reasons = guard.check_answer(answer, facts, version) if use_output_guard else []
+    reasons = (guard.check_answer(answer, facts, version) if use_output_guard else []) if answer else ["llm_error"]
     guard_result = "passed" if not reasons else "blocked:" + ",".join(reasons)
     if reasons:
         answer = fallback(intent.name, facts.data)

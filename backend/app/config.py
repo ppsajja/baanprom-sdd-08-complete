@@ -175,3 +175,41 @@ PAST_TECHNICIAN_MAX = 3
 # ---- R2 CR-13 (Q-67 ปิดใน EV-051) งานเบื้องหลังเมื่อรันหลาย process ----
 # REQ-OP-008 process ที่ถือสิทธิ์ทำงานเบื้องหลังต่ออายุทุกนาที ถ้าไม่ต่อภายใน 90 วินาที process อื่นรับต่อ
 SCHEDULER_LEASE_SECONDS = 90
+
+# ---- R2 ส่วน B ค่าทุกตัวมาจากประชุมงวด 2 ของ R2 (EV-053) อยู่ที่นี่ที่เดียวตาม D-00-05 ----
+
+# CR-14 BR-10 ตารางเวลาของช่าง (UC-04) SH-06 ใน EV-053
+SLOT_HOURS = 2                    # ช่วงละ 2 ชั่วโมง (ขนาดเดียวกับช่วงเวลาเดิมของ seed_demo และ uat_seed)
+WORK_START_HOUR = 8               # เริ่มได้ตั้งแต่ 08:00
+WORK_END_HOUR = 20                # ต้องจบไม่เกิน 20:00
+SCHEDULE_DAYS_AHEAD = 30          # เพิ่มช่วงเวลาได้ล่วงหน้าไม่เกิน 30 วัน
+SCHEDULE_MIN_LEAD_HOURS = 1       # ช่วงที่เพิ่มต้องเริ่มอย่างน้อย 1 ชั่วโมงจากตอนนี้
+SCHEDULE_VIEW_DAYS = 14           # หน้าตารางเวลาแสดง 14 วัน
+
+# CR-15 BR-11 คะแนนช่าง (UC-11) SH-01 ใน EV-051 (Q-20) และ EV-053
+RATING_WINDOW_DAYS = 14           # ให้คะแนนได้ภายใน 14 วันหลังช่างปิดงาน
+RATING_MIN_COUNT_TO_SHOW = 3      # แสดงค่าเฉลี่ยเมื่อมีอย่างน้อย 3 คะแนน
+RATING_COMMENT_MAX = 300
+
+# CR-17 UC-10 ช่องทางรับข้อความ REQ-FN-072 ค่าเชื่อม LINE (Ops lead ใน EV-053)
+NOTIFY_CHANNELS = ("sms", "line")
+LINE_LINK_CODE_MINUTES = 10       # รหัสเชื่อมบัญชี LINE หมดอายุใน 10 นาที
+
+
+def line_channel_secret() -> str:
+    # ใช้ตรวจลายเซ็นของ webhook ของ LINE ตัวจำลองใช้ค่าตั้งต้นนี้ ระบบจริงต้องตั้งค่าจริง (OAT-8)
+    return os.getenv("LINE_CHANNEL_SECRET", "mock-line-secret")
+
+
+# CR-18 (GAP-32) กุญแจแยกบทบาทของเจ้าหน้าที่ ส่งใน header คนละชื่อ ไม่ตั้ง = บทบาทนั้นใช้ไม่ได้ทุกโหมด
+def call_center_token() -> str:
+    return os.getenv("CALL_CENTER_TOKEN", "")
+
+
+def finance_token() -> str:
+    return os.getenv("FINANCE_TOKEN", "")
+
+
+# CR-19 REQ-AI-023 (ชั้นที่ 3 ของการรับส่วน AI): รุ่นโมเดลที่ผ่าน eval ล่าสุด ผู้ช่วยเปิดได้เฉพาะเมื่อโมเดลที่ใช้อยู่ตรงกับค่านี้
+def assistant_accepted_model() -> str:
+    return os.getenv("ASSISTANT_ACCEPTED_MODEL", "mock-1.1")

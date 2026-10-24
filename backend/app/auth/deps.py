@@ -1,6 +1,8 @@
 """CR-11 REQ-SEC-014: ตัวตนของผู้เรียก มาจาก header Authorization: Bearer <token> เท่านั้น
 customer_id หรือ technician_id ที่ส่งมาใน body หรือ query ไม่ถูกใช้ตัดสินสิทธิ์อีกต่อไป (ปิด TH-01 และ GAP-24)
-call center อ่านงานได้ด้วยกุญแจของ Ops (X-Ops-Token) จนกว่าจะมีกุญแจแยกบทบาท (GAP-32)"""
+call center อ่านงานได้ด้วยกุญแจของ Ops (X-Ops-Token) จนกว่าจะมีกุญแจแยกบทบาท (GAP-32)
+CR-18 (GAP-32 ปิด): กุญแจแยกบทบาท X-Call-Center-Token (CALL_CENTER_TOKEN) และ X-Finance-Token (FINANCE_TOKEN)
+กุญแจของ Ops ยังอ่านงานได้เหมือนเดิม (คนเวรใช้ตามคู่มือ) บทบาทที่ไม่ตั้งกุญแจใช้ไม่ได้ทุกโหมด"""
 import hmac
 from datetime import datetime
 
@@ -57,13 +59,33 @@ def is_ops(x_ops_token: str | None = Header(default=None)) -> bool:
     return bool(expected and x_ops_token and hmac.compare_digest(x_ops_token, expected))
 
 
+def _key_ok(given: str | None, expected: str) -> bool:
+    return bool(expected and given and hmac.compare_digest(given, expected))
+
+
+def is_call_center(x_call_center_token: str | None = Header(default=None)) -> bool:
+    return _key_ok(x_call_center_token, config.call_center_token())
+
+
+def require_call_center(ok: bool = Depends(is_call_center)) -> None:
+    if not ok:
+        raise HTTPException(403, "ต้องใช้สิทธิ์ของ call center")
+
+
+def require_finance(x_finance_token: str | None = Header(default=None)) -> None:
+    if not _key_ok(x_finance_token, config.finance_token()):
+        raise HTTPException(403, "ต้องใช้สิทธิ์ของ Finance")
+
+
 class Reader:
     """ผู้อ่านงาน: ผู้ที่เข้าสู่ระบบแล้ว (actor) หรือ call center ที่ใช้กุญแจของ Ops (ops = True)"""
     def __init__(self, actor: Actor | None, ops: bool):
         self.actor, self.ops = actor, ops
 
 
-def current_reader(actor: Actor | None = Depends(optional_actor), ops: bool = Depends(is_ops)) -> Reader:
+def current_reader(actor: Actor | None = Depends(optional_actor), ops: bool = Depends(is_ops),
+                   call_center: bool = Depends(is_call_center)) -> Reader:
+    ops = ops or call_center  # CR-18: call center อ่านงานด้วยกุญแจของตัวเองได้ (REQ-SEC-010 บรรทัดที่ 1)
     if actor is None and not ops:
         raise HTTPException(401, MSG_LOGIN_REQUIRED, headers={"WWW-Authenticate": "Bearer"})
     return Reader(actor, ops)

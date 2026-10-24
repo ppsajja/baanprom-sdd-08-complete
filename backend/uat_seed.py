@@ -2,12 +2,12 @@
 ลูกค้าสมมติ 30 ราย ช่างสมมติ 10 คน ช่วงเวลาว่าง 7 วันข้างหน้า วันละ 3 ช่วงต่อช่าง
 ไม่มีเบอร์จริงของใคร: เบอร์ทุกเบอร์ขึ้นต้นด้วย 000-000 (REQ-PRV-002 ใช้กับการทดสอบด้วย)
 ใช้: DATABASE_URL=<ฐานข้อมูลของเครื่องทดสอบ> python uat_seed.py [--slots-per-day 3]
-ฐานข้อมูลต้องว่าง สคริปต์สร้างตารางด้วย migration ล่าสุด (m004) ถ้ามีลูกค้าอยู่แล้วจะหยุดโดยไม่เขียนอะไร"""
+ฐานข้อมูลต้องว่าง สคริปต์สร้างตารางด้วย migration ล่าสุด (m005) ถ้ามีลูกค้าอยู่แล้วจะหยุดโดยไม่เขียนอะไร"""
 import argparse
 from datetime import datetime, timedelta
 
 from app.db.session import engine, SessionLocal
-from app.db.migrations.m004_r2 import upgrade
+from app.db.migrations.m005_r2b import upgrade
 from app.db.models import Account, Customer, ServiceAddress, Technician, TimeSlot
 
 CATEGORIES = ["ประปา", "ไฟฟ้า", "แอร์"]

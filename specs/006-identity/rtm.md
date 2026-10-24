@@ -6,7 +6,7 @@
 
 | REQ | ที่มา (EV) | อยู่ใน spec ส่วน 4 | AC | test | task | โค้ด / หน้าจอ | สถานะ | ทีมตัดสิน |
 |---|---|---|---|---|---|---|---|---|
-| REQ-FN-058 ลงทะเบียน หลายที่อยู่ | TH-01, EV-051 | ใช่ | AC-02-01, AC-02-10 | test_AC_02_01, test_AC_02_10, UI-02-02.test.jsx, AC-07-20.test.jsx | T-02, T-07 | auth/service.py register_customer, auth/router.py, Register.jsx, TechnicianPicker.jsx | ขาดบางส่วน: หน้าจอเพิ่มที่อยู่ยังไม่มี (F-17) | รับ ส่วน B ตัดสินว่าจะทำหรือ Won't |
+| REQ-FN-058 ลงทะเบียน หลายที่อยู่ | TH-01, EV-051 | ใช่ | AC-02-01, AC-02-10 | test_AC_02_01, test_AC_02_10, UI-02-02.test.jsx, AC-07-20.test.jsx | T-02, T-07 | auth/service.py register_customer, auth/router.py, Register.jsx, TechnicianPicker.jsx | ครบ (R2 ส่วน B หน้า UI-02-04 ปิด F-17) | รับ ส่วน B ตัดสินว่าจะทำหรือ Won't (ทำแล้วด้วย CR-18) |
 | REQ-FN-059 ลูกค้าเข้าสู่ระบบ | EV-051 | ใช่ | AC-02-02 | test_AC_02_02, UI-02-01.test.jsx, AC-02-06.test.jsx | T-02, T-07 | auth/router.py, Login.jsx, App.jsx | ครบ | รับ |
 | REQ-FN-060 ช่างเข้าสู่ระบบ | EV-051 (SH-06) | ใช่ | AC-01-01, AC-01-02 | test_AC_01_01, test_AC_01_02, UI-01-01.test.jsx | T-06, T-07 | auth/service.py create_technician_account, Login.jsx | ครบ | รับ |
 | REQ-SEC-013 OTP | หน้าบทเรียน A07, EV-051 | ใช่ | AC-02-03, 04, 05, 08, 11, AC-01-02 | test_identity.py 6 ตัว | T-01 | auth/service.py, config.py | ครบ (พิสูจน์ชั้น 3 ใน T-01) | รับ |
@@ -22,3 +22,13 @@ endpoint ใหม่ทั้ง 8 ตัวชี้กลับไปหา R
 ข้อค้นพบ
 - F-17 (REQ ทำไม่ครบบนหน้าจอ) REQ-FN-058 บอกว่า "เพิ่มที่อยู่ได้หลายแห่ง" API มี (POST /me/addresses AC-02-10) แต่ไม่มีหน้าจอให้ลูกค้าเพิ่มเอง test ทุกตัวผ่านเพราะ AC-02-10 ตรวจผ่าน API แบบเดียวกับ F-06 ของ 002 ส่งต่อส่วน B ของ R2
 - F-18 (สายตามรอยอ้อม) "งานของฉัน" (UI-02-03, GET /me/jobs) รองรับ REQ-FN-052 ของ 003 ไม่มี AC ของตัวเองใน identity.feature ตรวจด้วย UI-02-03.test.jsx และ test_AC_05_04 ของ 007 ทีมรับไว้ ไม่เพิ่ม AC เพราะ REQ-FN-052 มี AC-09-07 อยู่แล้ว
+
+## R2 ส่วน B (CR-18, 10 ธ.ค. 2569)
+
+| REQ | ที่มา (EV) | อยู่ใน spec ส่วน 4 | AC | test | task | โค้ด / หน้าจอ | สถานะ | ทีมตัดสิน |
+|---|---|---|---|---|---|---|---|---|
+| REQ-FN-074 หน้าที่อยู่ หาพิกัด | F-17, GAP-40, EV-053 | ใช่ | AC-02-12, AC-02-13, AC-02-14 | test_addresses.py 3 ตัว, UI-02-04.test.jsx (2 ตัว) | T-09 | auth/router.py locate addresses, maps/__init__.py, Addresses.jsx, Register.jsx | ครบ | รับ |
+| REQ-PRV-011 บรรทัดที่ 4 | SH-05 EV-053 | ใช่ | AC-02-12 | test_AC_02_12 (ไม่มี lat ในคำตอบ) test_AC_00_13 (ข้อความถึง IF-03 ไม่มีชื่อ) | T-09 | integrations/http_map.py ส่งแค่ text | ครบ | รับ |
+
+ข้อค้นพบเดิม: F-17 ปิด (UI-02-04 และ AC-02-12 ตรวจผ่านหน้าจอด้วย UI-02-04.test.jsx) F-18 คงเดิม (ทีมตัดสินรับ ตรวจด้วย UI-02-03.test.jsx) AS-16 เลิกใช้
+

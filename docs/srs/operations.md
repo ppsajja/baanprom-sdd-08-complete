@@ -1,4 +1,4 @@
-# คู่มือรับมือเหตุ (runbook) ฉบับใช้จริง รุ่น 1.3 | บ้านพร้อม R1 และ R2
+# คู่มือรับมือเหตุ (runbook) ฉบับใช้จริง รุ่น 1.4 | บ้านพร้อม R1 และ R2
 
 สถานะ: ใช้จริง (Baseline B3) | เจ้าของ: Ops lead (รับเป็นเจ้าของในประชุมทบทวน EV-045 วันที่ 24 ต.ค. 2569) | ที่มา: REQ-OP-006, REQ-OP-007, REQ-SEC-012 ใน specs/000-shared/constraints.md ส่วน 6 (CR-07 Approved)
 รุ่น 1.1 (CR-09 Approved EV-047 Baseline B4): เพิ่มเหตุการณ์ที่ 6 ผู้ช่วยตอบเพี้ยนหรือเลื่อนนัดผิด เครื่องมือของคนเวรสำหรับผู้ช่วย และ endpoint ของผู้ช่วยในบัญชี endpoint หัวหน้า call center เพิ่มในตารางบทบาท เหตุการณ์ที่ 6 ยังไม่ได้เดินตาม
@@ -6,6 +6,7 @@
 ตรวจรับด้านปฏิบัติการ R1 (OAT-3, EV-049): เหตุการณ์ที่ 4 ถึง 6 เดินตามแล้ว คำสั่งในส่วนเครื่องมือรันบน PostgreSQL ได้ทุกคำสั่ง (docs/acceptance/oat-results-r1.md) ซ้อมกู้คืนครั้งแรกบน PostgreSQL บันทึกเป็น docs/srs/incidents/INC-01.md
 ตรวจรับรอบสอง (EV-050 16 พ.ย. 2569): log ของแอปออก stdout เป็น JSON บรรทัดละเหตุการณ์แล้ว (DEF-02) คนเวรอ่าน log จากที่บริการระบบเก็บ stdout ไว้ หลังบ้านรัน process เดียวจนกว่าจะมีคำตอบ Q-67 เพราะคิวข้อความ ตัวนับ /metrics และสถานะการเตือนอยู่ในหน่วยความจำ (docs/handover/install-guide.md ขั้นที่ 5)
 รุ่น 1.3 (R2 ส่วน A CR-11 CR-12 CR-13 EV-051): หลังบ้านรันหลาย process ได้ (python -m app.ops.serve --workers N) คิวข้อความอยู่ในตาราง notification_messages ไม่หายเมื่อเริ่มใหม่ (Q-67 ปิด) เพิ่มเหตุการณ์ที่ 7 เข้าสู่ระบบไม่ได้ และคำสั่งดูงานที่กำลังหาช่างใหม่ บัญชี endpoint แก้ทุกแถวที่เคยตรวจด้วย customer_id หรือ technician_id เป็นตรวจจาก token และเพิ่ม endpoint ใหม่ 14 ตัว
+รุ่น 1.4 (R2 ส่วน B CR-14 ถึง CR-19 EV-053): เพิ่มเหตุการณ์ที่ 8 (กระทบยอดพบรายการต่าง) ที่ 9 (LINE หรือ SMS ไม่ตอบ) ที่ 10 (ช่างทิ้งงาน Q-51 Q-53) คำสั่งของ R2 ส่วน B (สถานะระบบภายนอก ผลการส่งข้อความ ช่างที่ปฏิเสธบ่อยรายเดือน Q-70) กุญแจของ call center และ Finance แยกจาก Ops (REQ-SEC-015) บัญชี endpoint เพิ่ม 23 ตัว เหตุการณ์ที่ 7 ถึง 9 เดินตามแล้วใน OAT-3 ของ R2 (docs/acceptance/oat-results-r2.md)
 ตรวจแล้วด้วย walkthrough (วิธีตรวจของ REQ-OP-006): สมาชิกกลุ่ม Y ที่ไม่เคยเห็นระบบ เดินตามเหตุการณ์ที่ 1 ถึง 3 จนจบ แก้ 2 จุดที่ติดแล้ว (บันทึกใน CR-07 ส่วน walkthrough) เหตุการณ์ที่ 4 และ 5 เพิ่มหลัง walkthrough ยังไม่ได้เดินตาม
 ประวัติ: รุ่นร่าง (รอบ Failure Day) AI ร่างแทนทีม (prompt-log.md #68) | รุ่น 1.0 ทีมแก้ตามคำตอบ Q-40, Q-41, Q-43, Q-44 และผล walkthrough (prompt-log.md #71) การแก้ไฟล์นี้ต้องผ่าน Ops lead เพิ่มหรือปิด endpoint ต้องแก้ "บัญชี endpoint" ใน commit เดียวกัน (REQ-SEC-012)
 
@@ -20,11 +21,11 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 | Ops lead | ตัดสินเรื่องการหยุดหรือเปิดรับงาน การติดต่อระบบภายนอก และถือกุญแจ X-Ops-Token | Ops lead ของบ้านพร้อม |
 | Dev lead | ตัดสินเรื่องโค้ด การกู้คืน และการแก้ config | Dev lead ของกลุ่ม X |
 | เจ้าของธุรกิจ (SH-01) | ตัดสินเรื่องเงินและการสื่อสารกับลูกค้า | SH-01 |
-| Finance | ปิดรายการคืนเงินที่ไม่ทราบผลภายใน 1 วันทำการ (Q-41) | Finance ของบ้านพร้อม |
+| Finance | ปิดรายการคืนเงินที่ไม่ทราบผลภายใน 1 วันทำการ (Q-41) นำเข้ารายงานของ gateway ทุกวันทำการ 10:00 น. (UC-13) ถือกุญแจ X-Finance-Token (รุ่น 1.4) | Finance ของบ้านพร้อม |
 | SH-05 | เจ้าหน้าที่คุ้มครองข้อมูล รับเรื่องคำขอลบที่ทำไม่ทันหรือมีปัญหา | SH-05 |
 | หัวหน้าช่าง (SH-06) | เพิ่มช่างหรือช่วงเวลา | SH-06 |
 | call center | รับสายลูกค้า ใช้ข้อความที่เตรียมไว้ในคู่มือนี้ และรับคำขอลบข้อมูล | เจ้าหน้าที่ call center |
-| หัวหน้า call center | เจ้าของผู้ช่วย UC-14 (REQ-AI-022) สั่งปิดผู้ช่วย ดูตั๋วส่งต่อ ทบทวนรายสัปดาห์ (CR-09, Q-60) | หัวหน้า call center ของบ้านพร้อม (ยังไม่มีรหัส SH) |
+| หัวหน้า call center | เจ้าของผู้ช่วย UC-14 (REQ-AI-022) สั่งปิดผู้ช่วย ดูตั๋วส่งต่อ ทบทวนรายสัปดาห์ (CR-09, Q-60) เลื่อนนัดกลับ (REQ-FN-075) ถือกุญแจ X-Call-Center-Token (รุ่น 1.4) | หัวหน้า call center ของบ้านพร้อม (ยังไม่มีรหัส SH) |
 
 ## เครื่องมือของคนเวร
 
@@ -173,6 +174,64 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 ใครตัดสินใจ
 - เปิดทางเข้าสู่ระบบอื่นชั่วคราว: ห้ามทำโดยไม่มี CR (REQ-SEC-014)
 
+## เหตุการณ์ที่ 8: กระทบยอดพบรายการต่าง (CR-16)
+
+อ้าง: REQ-FN-070, REQ-FN-071, BR-13, REQ-IF-010 | เพิ่มในรุ่น 1.4 เดินตามแล้วใน OAT-3 ของ R2
+อาการ
+- หน้า "กระทบยอด" ของ Finance แสดงรายการต่างหลังนำเข้ารายงานของวัน หรือไฟล์ถูกปฏิเสธพร้อมเลขบรรทัด
+ขั้นตอน
+1. ไฟล์ถูกปฏิเสธ: Finance ดาวน์โหลดรายงานของวันนั้นจาก gateway ใหม่ ห้ามแก้ไฟล์เอง ถ้ายังผิดส่งเลขบรรทัดให้ Dev lead
+2. "มีในรายงาน ไม่มีในระบบ" หรือ "มีในระบบ ไม่มีในรายงาน": ค้นงานจาก reference (`curl -s -H "X-Call-Center-Token: $CC" $BASE/jobs/<เลขงาน>`) แล้วถาม gateway ด้วย reference เดิม ห้ามตัดเงินหรือคืนเงินซ้ำ (BR-13 ข้อ 8)
+3. "ยอดไม่ตรง" หรือ "ผลไม่ตรง": ระบบไม่เปลี่ยนผลเอง Finance ตรวจกับ gateway แล้วบันทึกผลในรายการติดตาม
+4. คืนเงินที่ยังไม่ทราบผลหลังกระทบยอด: `curl -s -H "X-Finance-Token: $FIN" $BASE/finance/refunds/follow-up` ปิดภายใน 1 วันทำการ (Q-41)
+จุดยกระดับ
+- ยอดต่างรวมของวันเกิน 1 รายการที่ไม่รู้สาเหตุ: SH-01 (เงินของลูกค้า)
+ใครตัดสินใจ
+- คืนเงินด้วยมือนอกระบบ: SH-01 กับ Finance เท่านั้น
+
+## เหตุการณ์ที่ 9: LINE หรือ SMS ไม่ตอบ (CR-17)
+
+อ้าง: REQ-FN-072, REQ-FN-073, REQ-QA-010, BR-12 | เพิ่มในรุ่น 1.4 เดินตามแล้วใน OAT-3 และ OAT-5 ของ R2
+อาการ
+- ผลการส่งในตาราง notification_deliveries ช่อง line มี failed เพิ่มขึ้น และ fallback เป็น true (ระบบส่ง SMS แทนแล้ว ลูกค้ายังได้ข้อความ)
+- หรือช่อง sms มี failed และข้อความค้างในคิว (เหมือนเหตุการณ์ที่ 4)
+ขั้นตอน
+1. ดูผลการส่งรวม: `psql "$DATABASE_URL" -c "SELECT channel, result, fallback, count(*) FROM notification_deliveries WHERE at > now() - interval '1 hour' GROUP BY 1, 2, 3;"`
+2. LINE ล้มอย่างเดียว: ไม่ต้องทำอะไรกับลูกค้า ระบบส่ง SMS แทน แจ้ง Ops lead ให้ติดต่อ LINE ถ้าเกิน 30 นาที
+3. SMS ล้ม: ทำตามเหตุการณ์ที่ 4 (คิวส่งซ้ำ 6 ครั้ง) และเหตุการณ์ที่ 7 (OTP ส่งไม่ได้)
+4. ตรวจว่า webhook ของ LINE ยังผ่าน: access log ของหลังบ้านไม่ควรมีบรรทัด POST /integrations/line/webhook ที่ได้ 403 (ลายเซ็นผิด) จำนวนมาก (ตัวนับของ /metrics ไม่นับ 403 เป็นความล้มเหลว จึงดูที่ log) ถ้ามี แปลว่ามีคนยิง webhook ปลอม หรือ LINE_CHANNEL_SECRET ไม่ตรง แจ้ง Dev lead
+จุดยกระดับ
+- SMS ล้มเกิน 30 นาที: Ops lead (ลูกค้าใหม่เข้าสู่ระบบไม่ได้)
+ใครตัดสินใจ
+- ปิดตัวเลือก LINE ชั่วคราว: Ops lead (ตั้ง LINE_ADAPTER เป็นตัวจำลองไม่ใช่ทางแก้ เพราะข้อความจะไม่ถึงลูกค้า)
+
+## เหตุการณ์ที่ 10: ช่างทิ้งงานหลังออกเดินทางหรือระหว่างทำงาน (Q-51 Q-53 Won't ใน R2)
+
+อ้าง: Q-51, Q-53 (ตอบใน EV-053) BR-01 R3 R6 | เพิ่มในรุ่น 1.4 ยังไม่ได้เดินตาม
+อาการ
+- ลูกค้าโทรว่าช่างออกเดินทางแล้วไม่มา หรือทำงานค้างแล้วหายไป
+ขั้นตอน
+1. call center เปิดงานดูประวัติสถานะ โทรหาช่าง
+2. ช่างไม่มาและงานยังเป็น "ช่างกำลังเดินทาง": แนะนำลูกค้ายกเลิกเองในแอป (R3) แล้วส่งเลขงานให้ Finance คืนค่าเดินทางเหมาให้ลูกค้านอกระบบ ช่างไม่ได้ค่าเดินทาง
+3. งานเป็น "กำลังดำเนินงาน": เปิดเรื่องร้องเรียนตามกระบวนการเดิม (R6) แจ้งหัวหน้าช่าง
+จุดยกระดับ
+- ช่างคนเดิมเกิดซ้ำ: SH-06
+ใครตัดสินใจ
+- เงินที่คืนนอกระบบ: SH-01 กับ Finance
+
+## คำสั่งของ R2 ส่วน B สำหรับคนเวร (รุ่น 1.4) คำสั่งชุดนี้รันจริงใน OAT-3 ของ R2
+
+ตัวแปร: TOKEN = กุญแจของ Ops, CC = กุญแจของ call center, FIN = กุญแจของ Finance (ห้ามใส่ในเอกสารหรือแชต)
+- ระบบภายนอกใช้ตัวไหน ตั้งค่าครบไหม (REQ-OP-009): `curl -s -H "X-Ops-Token: $TOKEN" $BASE/ops/integrations` ถ้า /ready ตอบ 503 พร้อม integrations_not_configured ให้ตั้งค่าที่ขาดตาม install-guide.md
+- ข้อความล่าสุดที่ส่ง (ปิดบังเบอร์): `curl -s -H "X-Ops-Token: $TOKEN" "$BASE/ops/notifications/outbox?limit=3"`
+- ผลการส่งแยกช่องทาง: `psql "$DATABASE_URL" -c "SELECT channel, result, fallback, count(*) FROM notification_deliveries GROUP BY 1, 2, 3 ORDER BY 1, 2;"`
+- ช่างที่ปฏิเสธหรือไม่ตอบใน 30 วัน (รายงานรายเดือนให้ SH-06 Q-70): `psql "$DATABASE_URL" -c "SELECT technician_id, count(*) FROM job_assignments WHERE response IN ('rejected', 'no_response') AND offered_at > now() - interval '30 days' GROUP BY 1;"`
+- รายการต่างของการกระทบยอดแยกชนิด: `psql "$DATABASE_URL" -c "SELECT kind, count(*) FROM reconciliation_items GROUP BY 1;"`
+- OTP ที่ส่งในชั่วโมงล่าสุด (เหตุการณ์ที่ 7): `psql "$DATABASE_URL" -c "SELECT count(*) FROM otp_challenges WHERE created_at > now() - interval '1 hour' AND sent;"`
+- รายการคืนเงินที่ต้องติดตามด้วยกุญแจของ Finance: `curl -s -H "X-Finance-Token: $FIN" $BASE/finance/refunds/follow-up` (กุญแจของ Ops ได้ 403 ตาม REQ-SEC-015 คำสั่งเดิม /ops/refunds/follow-up ยังใช้ได้สำหรับ Ops)
+- ปิดผู้ช่วยด้วยกุญแจของ call center: `curl -s -X POST -H "X-Call-Center-Token: $CC" -H "Content-Type: application/json" -d '{"enabled": false}' $BASE/call-center/assistant/switch`
+- ผู้ช่วยปิดเองเพราะรุ่นโมเดลไม่ใช่รุ่นที่รับ (REQ-AI-023): `curl -s $BASE/assistant/status` ดูช่อง model_version กับ accepted_model ห้ามแก้ ASSISTANT_ACCEPTED_MODEL ก่อนรัน eval ทั้งชุดผ่าน
+
 ## คำสั่งของ R2 สำหรับคนเวร (CR-12, CR-13)
 
 - งานที่กำลังหาช่างใหม่: SELECT id, scheduled_start FROM jobs WHERE status = 'rematching' ORDER BY scheduled_start (ระบบยกเลิกเองเมื่อครบ 2 ชั่วโมง หรือเหลือน้อยกว่า 1 ชั่วโมงก่อนนัด BR-07)
@@ -208,7 +267,7 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 | POST /slots/{slot_id}/hold | 002 | ลูกค้า | token ของลูกค้า ล็อกได้ 1 ช่วง (REQ-SEC-011) | ไม่มี |
 | GET /deposit-quote | 002 | ลูกค้า | ไม่ต้อง | ไม่มี |
 | POST /bookings | 002 | ลูกค้า | token ของลูกค้า ช่วงต้องล็อกโดยลูกค้าคนนี้หรือว่าง ที่อยู่ต้องเป็นของลูกค้าคนนี้ (CR-11) | ไม่มี |
-| GET /jobs/{job_id} | 002 | ลูกค้า ช่าง call center | เจ้าของงาน ช่างผู้รับมอบหมาย (token) หรือ X-Ops-Token ไม่ใช่ 403 และบันทึก (CR-11 GAP-24 ปิด) | ไม่มี |
+| GET /jobs/{job_id} | 002 | ลูกค้า ช่าง call center | เจ้าของงาน ช่างผู้รับมอบหมาย (token) X-Call-Center-Token (รุ่น 1.4) หรือ X-Ops-Token ไม่ใช่ 403 และบันทึก (CR-11 GAP-24 ปิด) | ไม่มี |
 | GET /jobs/{job_id}/technician-view | 002 | ช่าง | ช่างจาก token ต้องเป็นผู้รับงาน (ไม่ใช่ช่างที่ปฏิเสธแล้ว CR-12) 403 และบันทึก (REQ-SEC-010) | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
 | GET /technicians/{technician_id}/jobs | 003 | ช่าง | token ของช่างคนนี้เท่านั้น ขอรายการของคนอื่นได้ 403 และบันทึก (CR-11) | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
 | POST /jobs/{job_id}/status | 003 | ช่าง | ช่างจาก token ต้องเป็นผู้รับงาน (ไม่ใช่ช่างที่ปฏิเสธแล้ว CR-12) 403 และบันทึก | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
@@ -236,6 +295,18 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 | POST /jobs/{job_id}/decline-substitute | 007 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของงาน 403 และบันทึก | ไม่มี |
 | GET /me/past-technicians, GET /me/past-technicians/{technician_id}/slots | 002 (CR-08) | ลูกค้า | token ของลูกค้า ช่างต้องอยู่ในรายการช่างที่เคยใช้ของลูกค้าคนนี้ ไม่ใช่ 403 และบันทึก | ไม่มี |
 | GET /contact | 002 (CR-08) | ทุกคน | ไม่ต้อง | ไม่มี (เลขโทรของ call center) |
+| GET /me/schedule, POST /me/slots, POST /me/slots/{slot_id}/close, POST /me/days-off, DELETE /me/days-off/{day} | 008 (CR-14) | ช่าง | token ของช่าง แก้ได้เฉพาะตารางของตัวเอง ช่วงของคนอื่น 403 และบันทึก | ไม่มี (มีเลขงานเมื่อประกาศวันหยุดไม่ได้) |
+| POST /jobs/{job_id}/rating | 009 (CR-15) | ลูกค้า | token ของลูกค้าเจ้าของงาน 403 และบันทึก | ไม่มี |
+| GET /me/rating | 009 | ช่าง | token ของช่าง | ไม่มี (ค่าเฉลี่ยและจำนวน) |
+| GET /ops/technicians/{technician_id}/ratings | 009 | หัวหน้าช่างผ่าน Ops | X-Ops-Token ในโหมด production | ความเห็นที่ปิดบังแล้ว ไม่มีชื่อลูกค้า (REQ-PRV-012) |
+| POST /finance/reconciliations, GET /finance/reconciliations/{run_id}, GET /finance/refunds/follow-up | 010 (CR-16) | Finance | X-Finance-Token เท่านั้น (REQ-SEC-015) กุญแจอื่น 403 | ไม่มี (reference ยอด ผล) |
+| GET /me/notifications, PUT /me/notifications, POST /me/notifications/line-link, POST /me/notifications/line-unlink | 011 (CR-17) | ลูกค้า ช่าง | token ตั้งค่าได้เฉพาะของตัวเอง | ไม่มี (บอกแค่ว่าเชื่อม LINE แล้วหรือไม่) |
+| POST /integrations/line/webhook | 011 | LINE | X-Line-Signature (HMAC-SHA256 ด้วย LINE_CHANNEL_SECRET) ลายเซ็นผิด 403 | ไม่มี |
+| GET /ops/notifications/outbox | 011 | Ops และ test | X-Ops-Token ในโหมด production | เบอร์ที่ปิดบังแล้ว |
+| POST /call-center/assistant/switch, GET /call-center/assistant/tickets | 005 (CR-18) | หัวหน้า call center | X-Call-Center-Token เท่านั้น (ปิด GAP-32) | ไม่มี |
+| POST /call-center/jobs/{job_id}/revert-reschedule | 005 (CR-18) | call center | X-Call-Center-Token เท่านั้น | ไม่มี |
+| GET /me/addresses, DELETE /me/addresses/{address_id} | 006 (CR-18) | ลูกค้า | token ของลูกค้า ที่อยู่ของคนอื่น 403 และบันทึก | ที่อยู่ของตัวเอง ไม่มีพิกัด |
+| GET /ops/integrations | ทั้งระบบ (CR-18) | Ops | X-Ops-Token ในโหมด production | ไม่มี (ไม่แสดงค่าของกุญแจ) |
 
 ## แบบบันทึกเหตุการณ์ (incident record)
 

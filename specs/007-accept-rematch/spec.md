@@ -2,7 +2,7 @@
 
 version: 1.0 | status: approved (CR-12 เข้า Baseline B6) | owner: กลุ่ม X / PO: SH-01 | date: 2569-11-23
 baseline: B6 = B5 + CR-11, CR-12, CR-08, CR-13 | related: SPEC-BOOKING (002, UC-07 E3), SPEC-JOB-STATUS (003, UI-09-01), SPEC-CANCEL (004, BR-01 R4), SPEC-IDENTITY (006) | feature file: accept-rematch.feature v1.0
-Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.3 | mockups: UI-09-01 (แก้ใน specs/003-job-status/mockups), UI-02-03 (specs/006-identity/mockups)
+Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.4 | mockups: UI-09-01 (แก้ใน specs/003-job-status/mockups), UI-02-03 (specs/006-identity/mockups)
 
 ## Change Log
 
@@ -10,6 +10,7 @@ Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.3 | mock
 |---|---|---|---|---|
 | 0.1 | 2569-11-20 | ร่างแรกพร้อม CR-12 (Proposed) | ขอบเขต R2 (B5 ส่วน "สิ่งที่เลื่อนไป R2") | กลุ่ม X |
 | 1.0 | 2569-11-23 | CR-12 อนุมัติ ตัวเลข 30 นาที 2 ชั่วโมง 1 ชั่วโมง จาก EV-051 Q-50 ปิด | ประชุมงวด 1 ของ R2 | กลุ่ม X, SH-01 อนุมัติ |
+| 1.1 | 2569-12-10 | CR-18: ส่วน 8 อ้าง Constraint กลางรุ่น 1.4 ระยะของ BR-07 คำนวณผ่านบริการแผนที่ (REQ-IF-012) CR-14: ช่วงที่ช่างปิดไม่ถูกจับคู่ (BR-10) CR-17: ข้อความงานใหม่บอกเวลาที่ต้องตอบ (ปิด F-20) ข้อความของ REQ และ AC เดิมไม่เปลี่ยน | ประชุมงวด 2 ของ R2 (EV-053) Baseline B7 |
 
 ## 1. Intent
 
@@ -65,7 +66,7 @@ reason ที่ช่างพิมพ์ไม่ใช่ข้อมูล�
 
 ## 8. Constraints
 
-Constraint กลาง: ใช้ทุกข้อใน specs/000-shared/constraints.md รุ่น 1.3 (ห้ามคัดลอกข้อความมาไว้ที่นี่)
+Constraint กลาง: ใช้ทุกข้อใน specs/000-shared/constraints.md รุ่น 1.4 (ห้ามคัดลอกข้อความมาไว้ที่นี่) (รุ่น 1.3 เปลี่ยนเป็น 1.4 ตาม CR-18 Baseline B7)
 ข้อยกเว้นของ feature นี้: ไม่มี
 เฉพาะ feature นี้: REQ-SEC-004 ช่างแทนเห็นเบอร์ลูกค้าตามกฎเดิม (2 ชั่วโมงก่อนนัด) ผ่าน technician_view ตัวเดิม (Q-36 ยังไม่ย้าย)
 

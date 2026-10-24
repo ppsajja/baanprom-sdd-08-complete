@@ -1,7 +1,7 @@
 # Tasks: ลูกค้าลงทะเบียนและเข้าสู่ระบบ (UC-02) และช่างเข้าสู่ระบบ (UC-01)
 
 Feature: SPEC-IDENTITY | อ้างอิง: plan.md (plan v1) | สร้างด้วย /tasks วันที่ 2569-11-23 (tasks v1, prompt-log.md #92)
-สรุป: 8 task | 0 task รอ Q-xx | สถานะปัจจุบัน: เสร็จ 8 (ผ่านการตรวจ 5 ข้อ task หน้าจอผ่านการตรวจเทียบ mockup)
+สรุป: 9 task (T-09 เพิ่มตาม CR-18) | 0 task รอ Q-xx | สถานะปัจจุบัน: เสร็จ 9 (ผ่านการตรวจ 5 ข้อ task หน้าจอผ่านการตรวจเทียบ mockup)
 
 ### T-01 ตาราง accounts otp_challenges auth_sessions และกฎ BR-09
 - รองรับ: REQ-SEC-013, REQ-SEC-014, BR-09, D-02-01, D-02-02
@@ -52,6 +52,13 @@ Feature: SPEC-IDENTITY | อ้างอิง: plan.md (plan v1) | สร้า
 - ไฟล์ที่แตะ: backend/tests/conftest.py และ test เดิมตามตาราง frontend/src/__tests__/AC-07-19, UI-07-02-DEF-01 backend/uat_seed.py, uat_auth.py, uat_replay.py, load_test.py
 - สถานะ: เสร็จ
 
+### T-09 หน้าที่อยู่ของฉัน หาพิกัดจาก IF-03 ลบที่อยู่ (CR-18)
+- รองรับ: REQ-FN-074, REQ-PRV-011 บรรทัดที่ 4, REQ-QA-010 บรรทัดที่ 5
+- ตรวจด้วย: AC-02-12, AC-02-13, AC-02-14, UI-02-04 (และ UI-02-02 เดิมผ่านโดยไม่แก้)
+- ไฟล์ที่แตะ: backend/app/auth/router.py, backend/app/maps/__init__.py, backend/tests/test_addresses.py, frontend/src/pages/Addresses.jsx, Register.jsx, App.jsx, api/client.js
+- แบบหน้าจอ: UI-02-04, UI-02-02 (แก้)
+- สถานะ: เสร็จ
+
 ## ตารางความครบ (AC กับ task)
 
 | AC | task |
@@ -64,3 +71,4 @@ Feature: SPEC-IDENTITY | อ้างอิง: plan.md (plan v1) | สร้า
 | AC-02-10 | T-02, T-07 |
 | AC-01-01, AC-01-02 | T-06, T-07 |
 | AC-01-03 | T-03, T-07 |
+| AC-02-12, AC-02-13, AC-02-14 | T-09 |

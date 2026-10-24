@@ -103,3 +103,47 @@ curl -s -X POST -H "X-Ops-Token: $TOKEN" -H "Content-Type: application/json" -d 
 ## 9. ย้อนกลับรุ่น
 
 ถ้ารุ่นใหม่มีปัญหาหลังติดตั้ง: หยุดหลังบ้าน แตกไฟล์รุ่นก่อนลงโฟลเดอร์ใหม่ ชี้บริการไปโฟลเดอร์นั้น แล้วเปิด ตารางของรุ่นใหม่ที่เพิ่มขึ้นไม่ทำให้รุ่นเก่าพัง (migration เพิ่มตารางและคอลัมน์ ไม่ลบ) ถ้าข้อมูลเสีย ใช้ขั้นตอนกู้คืนใน operations.md ผู้สั่งย้อนกลับคือ Ops lead
+
+## R2 (Baseline B7) สิ่งที่เพิ่มในการติดตั้ง
+
+ส่วนนี้ผ่านการทำจริงบนเครื่องทดสอบใน OAT-1 OAT-8 ของ R2 (docs/acceptance/oat-results-r2.md) ขั้นที่ 1 ถึง 9 ข้างบนยังใช้ ยกเว้นที่เขียนว่าเปลี่ยน
+
+### R2-1 ตัวแปรแวดล้อมใหม่
+
+| ตัวแปร | ค่าในระบบจริง | ถ้าไม่ตั้ง | อ้าง |
+|---|---|---|---|
+| CALL_CENTER_TOKEN | กุญแจของ call center ที่ Ops lead สร้าง คนละค่ากับ OPS_TOKEN | endpoint ของ call center ใช้ไม่ได้ทุกโหมด | REQ-SEC-015 |
+| FINANCE_TOKEN | กุญแจของ Finance คนละค่ากับกุญแจอื่น | หน้ากระทบยอดใช้ไม่ได้ | REQ-SEC-015 |
+| PAYMENT_ADAPTER | http (เมื่อมีสัญญากับ gateway) | fake (ตัวจำลอง ห้ามเปิดให้ลูกค้าจริง) | REQ-IF-012 |
+| PAYMENT_API_URL, PAYMENT_API_KEY | ตามสัญญาของ gateway | /ready ตอบ 503 ถ้า PAYMENT_ADAPTER=http | IF-01 models.md ส่วน 9.1 |
+| SMS_ADAPTER, SMS_API_URL, SMS_API_KEY, SMS_SENDER_NAME | http และค่าของผู้ให้บริการ SMS | mock (OTP ไม่ถึงโทรศัพท์) | IF-02 |
+| LINE_ADAPTER, LINE_CHANNEL_TOKEN, LINE_CHANNEL_SECRET | http และค่าของบัญชีทางการ LINE | mock | IF-02 BR-12 |
+| MAP_ADAPTER, MAP_API_URL, MAP_API_KEY | http และค่าของบริการแผนที่ | mock (รู้จัก 15 เขตในกรุงเทพ) | IF-03 |
+| LLM_ADAPTER, LLM_API_URL, LLM_API_KEY, LLM_MODEL | ตั้งได้หลังรายการตรวจของ Q-56 ครบ | mock (MockLLM) | IF-05 Q-56 |
+| ASSISTANT_ACCEPTED_MODEL | รุ่นโมเดลที่ผ่าน eval ทั้งชุด Ops lead ตั้งหลังเห็นผล eval | mock-1.1 ถ้าใช้ LLM ตัวจริงผู้ช่วยจะปิดเอง | REQ-AI-023 |
+| MOCK_OUTBOX_PATH | เฉพาะเครื่องทดสอบที่รันหลาย process | ข้อความของตัวจำลองอยู่ในหน่วยความจำ | เครื่องทดสอบ |
+| MOCK_MAP_MODE, MOCK_SMS_MODE, MOCK_LINE_MODE | ห้ามตั้ง มีไว้ซ้อมระบบภายนอกไม่ตอบบนเครื่องทดสอบ | | OAT-5 |
+
+ตัวแปรของตัวจริงตั้งได้ทีละระบบ ระบบที่ยังไม่มีสัญญาคงเป็นตัวจำลอง ระบบจะบอกใน /ops/integrations ว่าตัวไหนยังเป็นตัวจำลอง
+
+### R2-2 ฐานข้อมูล
+
+migration m005 (ตาราง TechnicianDayOff Rating ReconciliationRun ReconciliationItem RefundResolution NotificationPreference NotificationDelivery และ index ของ payments refunds) ทำงานเองตอนหลังบ้านเริ่ม เพิ่มตาราง ไม่แก้ตารางเดิม รุ่น B6 อ่านฐานที่ผ่าน m005 แล้วได้ (ขั้นที่ 9 ย้อนกลับรุ่นยังใช้ได้)
+ตารางเวลาของช่างจริง: ช่างเพิ่มเองในเมนู "ตารางเวลา" (UC-04) ไม่ต้องใช้สคริปต์ของ Dev lead แล้ว ข้อความในขั้นที่ 4 เรื่องสคริปต์ใช้เฉพาะการย้ายข้อมูลครั้งแรก
+
+### R2-3 ตรวจหลังเปิด (เพิ่มจากขั้นที่ 5)
+
+```
+curl -s $BASE/ready                                              # {"ok":true,"database":"ok"} ถ้ามี integrations_not_configured ให้ตั้งค่าที่ขาด
+curl -s -H "X-Ops-Token: $TOKEN" $BASE/ops/integrations          # ตรวจว่าระบบที่มีสัญญาแล้วเป็น "mock": false
+curl -s $BASE/assistant/status                                   # ดู enabled model_version accepted_model
+curl -s -o /dev/null -w "%{http_code}\n" -H "X-Ops-Token: $TOKEN" $BASE/finance/refunds/follow-up   # 403 (กุญแจของ Ops ใช้กับ Finance ไม่ได้)
+```
+
+### R2-4 LINE webhook
+
+ตั้ง webhook URL ของบัญชีทางการ LINE เป็น `<URL ของหลังบ้าน>/integrations/line/webhook` ระบบตรวจลายเซ็นด้วย LINE_CHANNEL_SECRET ลายเซ็นผิดตอบ 403
+
+### R2-5 ผู้ช่วย
+
+ข้อความในขั้นที่ 7 (ปิดผู้ช่วยหลังติดตั้ง) ใช้ต่อจนกว่าการตรวจรับงวด 4 ของ R2 จะอนุญาตให้เริ่มทดลองแบบเงา หัวหน้า call center ปิดเปิดเองได้ด้วยกุญแจของตัวเอง (หน้า "เครื่องมือ call center")

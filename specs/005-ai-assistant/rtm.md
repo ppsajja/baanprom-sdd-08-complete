@@ -72,3 +72,16 @@
 |---|---|---|---|---|---|
 | REQ-DAT-010 บรรทัดที่ 2 | BR-01 รุ่น 1.1 (CR-10) | cancel-policy.md ข้อความ R3 และ source_hash refund-timing.md ตาม Q-35 eval set 1.1 (4 ข้อ) | test_AC_14_06_policy_matches_baseline, eval ทั้งชุด | ครบ ผ่าน 20 จาก 20 | รับ หลักฐานว่าบรรทัดที่ 2 ทำงาน: รอบแรกที่ยังไม่แก้ eval set AC-14-13 ไม่ผ่าน |
 | REQ-AI-020 | F-15 | ไม่แก้ถ้อยคำ SH-01 ตีความ "ทุกจอ" ว่าทุกจอที่มีผู้ช่วย (EV-048) | UI-14-01.test.jsx เดิม | F-15 ปิด | รับ |
+
+## แถวที่เปลี่ยนตาม CR-19 และ CR-18 (R2 ส่วน B, 10 ธ.ค. 2569)
+
+| REQ | ที่มา | สิ่งที่เปลี่ยน | ตรวจด้วย | สถานะ | ทีมตัดสิน |
+|---|---|---|---|---|---|
+| REQ-AI-023 ชั้นที่ 3 ของการรับ | TOR R2 ภาคผนวก ค, EV-053 | service.model_accepted (มีผลเฉพาะ production) router status บอกรุ่น config.assistant_accepted_model | test_AC_14_17 | ครบ | รับ |
+| REQ-AI-006 (Q-65) | EV-053 หัวหน้า call center | refund-timing.md บรรทัดของลูกค้า MockLLM mock-1.1 คำตอบสำรองมีบรรทัดธนาคาร eval set qa 1.2 เกณฑ์ AC-14-18 | test_AC_14_18, eval 5 จาก 5 | ครบ | รับ |
+| REQ-FN-075 เลื่อนกลับ | Q-62, GAP-31, EV-053 | callcenter/router.py revert-reschedule booking.reschedules_used ไม่นับ by_role call_center CallCenterTools.jsx | test_AC_14_19, UI-14-02.test.jsx | ครบ | รับ |
+| REQ-SEC-015 กุญแจของ call center | GAP-32, EV-053 | auth/deps.require_call_center /call-center/assistant/switch | test_AC_00_15, UI-14-02.test.jsx | ครบ | รับ |
+| REQ-AI-012 (F-16) | F-16 | ไม่แก้โค้ด เพิ่ม test กรณีเครื่องมือทำไปแล้วแต่ไม่ได้คำตอบ | test_AC_14_10_tool_timeout_after_effect_not_called_again | F-16 ปิด | รับ |
+| IF-05 LLM ตัวจริง | TOR R2 ข้อ 2, Q-56 | integrations/http_llm.py ปิดไว้ (LLM_ADAPTER=mock) | test_AC_00_13 (ข้อความถึง LLM ไม่มีเบอร์) | ครบ ส่วนที่ทำได้ เปิดจริงเป็นงานของผู้ว่าจ้าง | รับ |
+
+ข้อค้นพบ: ไม่มีข้อใหม่ F-15 ปิดใน CR-10 F-16 ปิดในรอบนี้

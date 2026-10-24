@@ -48,6 +48,11 @@ def anonymize(db, customer: Customer, now: datetime) -> None:
     # CR-11 (REQ-PRV-010 กับ REQ-SEC-014): ลบบัญชีที่มีเบอร์ และยกเลิก session ทุกตัว ลูกค้าคนนี้เข้าสู่ระบบด้วยบัญชีเดิมไม่ได้อีก
     from app.auth.service import revoke_customer
     revoke_customer(db, customer.id, now)
+    # CR-15 (REQ-PRV-012) ความเห็นในคะแนนช่างถูกลบ ดาวคงไว้ | CR-17 (REQ-PRV-010) รหัส LINE ของลูกค้าถูกลบ
+    from app.rating.service import erase as erase_rating_comments
+    from app.notify.preferences import erase as erase_line_link
+    erase_rating_comments(db, customer.id)
+    erase_line_link(db, customer.id)
 
 
 def append_ledger(customer_id: int, now: datetime, path: str | None = None) -> None:

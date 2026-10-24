@@ -1,20 +1,20 @@
 """REQ-FN-008 ค้นช่างว่างใน 7 วัน | BR-02 ไม่เสนอช่วงที่จองหรือล็อกโดยคนอื่น | BR-03 ระยะไม่เกิน 15 กม."""
 from datetime import datetime, timedelta
-import math
-
 from sqlalchemy import select
 
 from app import config
-from app.db.models import Technician, TimeSlot, ServiceAddress, Job, SLOT_FREE, SLOT_HELD, SLOT_BOOKED
+from app.db.models import Technician, TimeSlot, ServiceAddress, Job, SLOT_FREE, SLOT_HELD, SLOT_BOOKED, SLOT_CLOSED
+from app import maps
 
 
 def distance_km(lat1, lng1, lat2, lng2) -> float:
-    """ระยะทางโดยประมาณ (IF-03 ในระบบจริงเรียกบริการแผนที่ ตอนนี้ใช้สูตร haversine)"""
-    r = 6371.0
-    p1, p2 = math.radians(lat1), math.radians(lat2)
-    dp, dl = math.radians(lat2 - lat1), math.radians(lng2 - lng1)
-    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
-    return 2 * r * math.asin(math.sqrt(a))
+    """ระยะทางโดยประมาณ CR-18: เรียกบริการแผนที่ (IF-03) ผ่าน app/maps ตัวจำลองใช้สูตร haversine เดิม ผลจึงเท่าเดิม"""
+    return maps.distance_km(lat1, lng1, lat2, lng2)
+
+
+def unavailable(state: str, held_by: int | None, customer_id: int | None) -> bool:
+    """BR-02 และ CR-14 BR-10: จองแล้ว ล็อกโดยคนอื่น หรือช่างปิดเอง (closed) ไม่ว่าง ของที่ตัวเองล็อกยังเห็น"""
+    return state in (SLOT_BOOKED, SLOT_CLOSED) or (state == SLOT_HELD and held_by != customer_id)
 
 
 def release_expired_holds(db, now: datetime) -> None:
@@ -33,11 +33,8 @@ def release_expired_holds(db, now: datetime) -> None:
 
 def slot_visible_to(slot: TimeSlot, customer_id: int | None) -> bool:
     # รองรับ BR-02: ช่วงที่จองแล้วไม่ว่าง ช่วงที่คนอื่นล็อกไว้ก็ไม่ว่าง (ของตัวเองยังเห็น)
-    if slot.state == SLOT_BOOKED:
-        return False
-    if slot.state == SLOT_HELD and slot.held_by_customer_id != customer_id:
-        return False
-    return True
+    # CR-14: ช่วงที่ช่างปิดเอง (closed) ก็ไม่ว่าง
+    return not unavailable(slot.state, slot.held_by_customer_id, customer_id)
 
 
 def search_available(db, category: str, address: ServiceAddress, now: datetime,
@@ -48,14 +45,11 @@ def search_available(db, category: str, address: ServiceAddress, now: datetime,
     release_expired_holds(db, now)
     day_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     day_end = day_start + timedelta(days=config.SEARCH_DAYS_AHEAD)
-    techs = []
-    for tech in db.scalars(select(Technician).order_by(Technician.id)):
-        if category not in [s.strip() for s in tech.skills.split(",")]:
-            continue
-        # รองรับ BR-03: ช่างที่ไกลเกินระยะให้บริการไม่ปรากฏในผลค้นหา
-        if distance_km(tech.base_lat, tech.base_lng, address.lat, address.lng) > config.MAX_SERVICE_DISTANCE_KM:
-            continue
-        techs.append(tech)
+    skilled = [t for t in db.scalars(select(Technician).order_by(Technician.id))
+               if category in [s.strip() for s in t.skills.split(",")]]
+    # รองรับ BR-03: ช่างที่ไกลเกินระยะให้บริการไม่ปรากฏในผลค้นหา CR-18: ถามระยะจาก IF-03 ครั้งเดียวต่อคำค้น
+    kms = maps.distances_km((address.lat, address.lng), [(t.base_lat, t.base_lng) for t in skilled])
+    techs = [t for t, km in zip(skilled, kms) if km <= config.MAX_SERVICE_DISTANCE_KM]
     if not techs:
         return []
     by_tech: dict[int, list] = {t.id: [] for t in techs}
@@ -66,10 +60,14 @@ def search_available(db, category: str, address: ServiceAddress, now: datetime,
     ).all()
     for r in rows:
         # รองรับ BR-02 (slot_visible_to เดิม): ช่วงที่จองแล้วไม่ว่าง ช่วงที่คนอื่นล็อกไว้ก็ไม่ว่าง (ของตัวเองยังเห็น)
-        if r.state == SLOT_BOOKED or (r.state == SLOT_HELD and r.held_by_customer_id != customer_id):
+        if unavailable(r.state, r.held_by_customer_id, customer_id):  # CR-14: รวมช่วงที่ช่างปิด
             continue
         by_tech[r.technician_id].append({"slot_id": r.id, "start": r.start.isoformat(), "end": r.end.isoformat()})
-    return [{"technician_id": t.id, "name": t.name, "slots": by_tech[t.id]} for t in techs if by_tech[t.id]]
+    # CR-15 (Q-20, REQ-FN-069): คะแนนเฉลี่ยแสดงประกอบเท่านั้น ลำดับยังเป็นตามรหัสช่าง ไม่เรียงหรือคัดด้วยคะแนน
+    from app.rating.service import summaries
+    rating = summaries(db, [t.id for t in techs])
+    return [{"technician_id": t.id, "name": t.name, "rating": rating[t.id], "slots": by_tech[t.id]}
+            for t in techs if by_tech[t.id]]
 
 
 def find_alternatives(db, taken: TimeSlot, now: datetime, customer_id: int | None = None) -> list[dict]:

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI-02-04 ที่อยู่ของฉัน</title>
+<style>
+  /* สี ฟอนต์ และระยะห่าง คือส่วนที่ "ยืดหยุ่นได้" */
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Segoe UI","Noto Sans Thai",Tahoma,sans-serif;background:#eef2f4;color:#1e293b;padding:24px;line-height:1.6}
+  .note{max-width:1100px;margin:0 auto 16px;background:#fff7e6;border:1px dashed #d79a2b;border-radius:10px;padding:10px 14px;font-size:14px;color:#7a5414}
+  .row{display:flex;flex-wrap:wrap;gap:20px;justify-content:center}
+  .state{width:340px}
+  .state h2{font-size:14px;color:#475569;margin:0 0 8px 4px;font-weight:600}
+  .phone{background:#fff;border:1px solid #cbd5e1;border-radius:22px;padding:18px 16px 22px;box-shadow:0 6px 18px rgba(0,0,0,.06);min-height:600px}
+  .brand{font-weight:700;font-size:20px;color:#115e59}
+  .tagline{font-size:13px;color:#64748b;margin-bottom:12px}
+  .steps{display:flex;gap:6px;margin-bottom:16px}
+  .steps span{flex:1;text-align:center;font-size:12px;padding:5px 2px;border-radius:999px;background:#eef2f4;color:#475569}
+  .steps span.on{background:#0f766e;color:#fff;font-weight:600}
+  h3{font-size:16px;color:#1e293b;margin:0 0 8px}
+  label{display:block;font-size:13px;color:#475569;margin:12px 0 4px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid #94a3b8;border-radius:999px;padding:4px 14px;font-size:14px;background:#fff;color:#334155}
+  .chip.on{background:#0f766e;border-color:#0f766e;color:#fff}
+  .btn{display:block;text-align:center;background:#0f766e;color:#fff;border-radius:12px;padding:12px;font-weight:700;margin-top:16px}
+  .btn.search{background:#f97316}
+  .btn.ghost{background:#fff;color:#0f766e;border:1px solid #0f766e}
+  .tech{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-top:10px}
+  .tech b{display:block;font-size:15px;color:#1e293b}
+  .slots{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .slot{border:1px solid #0d9488;border-radius:8px;padding:4px 10px;font-size:13px;color:#115e59;background:#fff}
+  .card{border:1px solid #e2e8f0;border-radius:12px;padding:10px 14px;margin-top:8px;font-size:14px}
+  .card div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+  .card div span:first-child{color:#64748b;flex:none}
+  .card div span:last-child{text-align:right}
+  .card .strong span:last-child{font-weight:700;color:#0f172a}
+  .hold{margin-top:10px;font-size:13px;color:#115e59;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:8px 12px}
+  .terms{margin-top:10px;font-size:12.5px;color:#475569;background:#f8fafc;border-radius:10px;padding:10px 12px}
+  .terms b{display:block;color:#334155;margin-bottom:2px}
+  .terms ul{padding-left:18px}
+  .alert{border-radius:12px;padding:12px 14px;margin-top:10px;font-size:14px}
+  .alert.red{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
+  .alert.amber{background:#fff7ed;border:1px solid #fdba74;color:#9a3412}
+  .alert b{display:block;font-size:16px;margin-bottom:2px}
+  .muted{font-size:14px;color:#475569;margin-top:12px}
+  .todo{border:2px dashed #d79a2b;border-radius:12px;padding:10px 12px;text-align:center;color:#7a5414;background:#fffaf0;margin-top:10px;font-size:13px}
+  .ok{font-size:14px;color:#0f766e;font-weight:600;text-align:center;margin-top:8px}
+  .jobno{text-align:center;font-size:26px;font-weight:700;color:#0f172a;margin-top:2px}
+  .center{text-align:center}
+
+  .job{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-top:10px;font-size:14px}
+  .job .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+  .job b{font-size:15px;color:#1e293b}
+  .job .sub{color:#64748b;font-size:13px}
+  .job .dim{color:#94a3b8;font-size:13px}
+  .pill{background:#f0fdfa;color:#115e59;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .act{display:inline-block;background:#0f766e;color:#fff;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:600;margin-top:8px}
+  .hist{margin-top:6px;font-size:13px}
+  .hist div{display:flex;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding:4px 0}
+  .hist div span:first-child{color:#64748b}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .nav span{border:1px solid #0f766e;color:#0f766e;border-radius:999px;padding:2px 10px;font-size:12px}
+  .nav span.on{background:#0f766e;color:#fff}
+  .btn.danger{background:#dc2626}
+  .refund{margin-top:10px;font-size:14px;color:#115e59;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:10px 12px}
+  .refund b{font-size:16px}
+  input.f,textarea.f,select.f{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;font-size:14px;color:#0f172a;background:#fff}
+  .act.alt{background:#fff;color:#334155;border:1px solid #94a3b8}
+  .act.orange{background:#f97316}
+  .warn{font-size:13px;color:#c2410c;font-weight:600;margin-top:6px}
+  .who{font-size:12px;color:#475569;text-align:right}
+</style>
+</head>
+<body>
+<!-- MOCKUP สำหรับคุยกับผู้ใช้และ PO ไม่ใช่โค้ดจริง ห้ามคัดลอกไฟล์นี้ไปเป็นโค้ดทั้งไฟล์
+     ทบทวนกับ SH-01 และผู้ใช้ในบทบาท ในประชุมงวด 2 ของ R2 วันที่ 10 ธ.ค. 2569 (EV-053) เข้าสเปกผ่าน CR-18 (F-17 GAP-40)
+     ข้อมูลทุกตัวเป็นตัวอย่าง ดูว่าอะไร "ต้องตรง" ได้ที่ส่วน 12 หน้าจอ (UI) ใน spec.md
+     data-req บอกว่าส่วนนั้นรองรับ requirement ข้อไหน กล่องเส้นประคือเรื่องที่ยังเป็น Q-xx หรือ Won't ห้ามสร้าง -->
+<p class="note">MOCKUP UI-02-04 ที่อยู่ของฉัน | UC-02 รองรับ REQ-FN-058, REQ-FN-074, REQ-PRV-011 | 2 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง</p>
+<div class="row">
+  <section class="state">
+    <h2>สถานะ 1: รายการที่อยู่ (AC-02-12, AC-02-14)</h2>
+    <div class="phone">
+      <div class="brand">บ้านพร้อม</div><div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
+      <div class="who">คุณ สมชาย <u>ออกจากระบบ</u></div>
+      <div class="nav"><span class="">จองงาน</span><span class="">งานของฉัน</span><span class="">สถานะงาน</span><span class="">ยกเลิกการจอง</span><span class="">ผู้ช่วย</span><span class="on">ที่อยู่ของฉัน</span><span class="">การแจ้งเตือน</span></div>
+      <h3>ที่อยู่ของฉัน</h3>
+      <p class="muted">ที่อยู่แรกเป็นค่าตั้งต้นตอนค้นหาช่าง เลือกที่อยู่อื่นได้ที่หน้าจองงาน</p>
+      <div class="job" data-req="REQ-FN-074"><div class="top">บ้านเลขที่ 12 ซอยสุขใจ เขตสาทร (ค่าตั้งต้น)</div></div>
+      <div class="job" data-req="REQ-FN-074"><div class="top">คอนโด 88 ถนนสีลม เขตบางรัก <u>ลบ</u></div></div>
+      <label>ที่อยู่ใหม่</label><textarea class="f" rows="2"></textarea>
+      <p class="muted" data-req="REQ-PRV-011">ใส่ชื่อเขตหรืออำเภอด้วย ระบบใช้หาตำแหน่งบนแผนที่ พิกัดไม่แสดงให้ใครเห็น</p>
+      <span class="btn">เพิ่มที่อยู่</span>
+    </div>
+  </section>
+  <section class="state">
+    <h2>สถานะ 2: หาตำแหน่งไม่พบ (AC-02-13)</h2>
+    <div class="phone">
+      <div class="brand">บ้านพร้อม</div><div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
+      <div class="who">คุณ สมชาย <u>ออกจากระบบ</u></div>
+      <div class="nav"><span class="">จองงาน</span><span class="">งานของฉัน</span><span class="">สถานะงาน</span><span class="">ยกเลิกการจอง</span><span class="">ผู้ช่วย</span><span class="on">ที่อยู่ของฉัน</span><span class="">การแจ้งเตือน</span></div>
+      <h3>ที่อยู่ของฉัน</h3>
+      <label>ที่อยู่ใหม่</label><textarea class="f" rows="2">บ้านสวน</textarea>
+      <span class="btn">เพิ่มที่อยู่</span>
+      <div class="alert red" data-req="REQ-FN-074">ไม่พบตำแหน่งของที่อยู่นี้ กรุณาใส่ชื่อเขตหรืออำเภอด้วย</div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

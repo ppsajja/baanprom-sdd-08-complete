@@ -2,7 +2,7 @@
 
 version: 1.2 | status: approved (CR-10 เข้า Baseline B5 พร้อมการรับ R1) | owner: กลุ่ม X / PO: SH-01 | date: 2569-11-03
 baseline: B3 (2569-10-24) = B2 + CR-07 (เข้า B2 ด้วย CR-06) | supersedes: v1.0 | related: SPEC-BOOKING (specs/002-booking, B2 อ้าง spec นี้ว่า "draft" ตั้งแต่ v1.0), SPEC-JOB-STATUS (specs/003-job-status, B2) | feature file: cancel-refund.feature v1.2
-Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.1 | mockups: UI-08-01, UI-08-02
+Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.4 | mockups: UI-08-01, UI-08-02
 
 ## Change Log
 
@@ -14,6 +14,7 @@ Constraint กลาง: specs/000-shared/constraints.md รุ่น 1.1 | mock
 | 1.1 | 2569-10-24 | CR-07: อ้าง Constraint กลางรุ่น 1.1 เพิ่ม AC-08-07 ถึง AC-08-10 (AC-08-10 คือ MU-01) ปิด Q-41, Q-42 ส่วน 12 เพิ่มรายการ "ต้องตรง" ของ UI-08-01 (คำตอบ 403) endpoint ยกเลิกของ feature นี้เป็นทางเดียวของลูกค้า (POST /jobs/{id}/cancel ของ 002 ปิดแล้ว) | รอบ Failure Day และประชุมทบทวน EV-045 | กลุ่ม X, SH-01 อนุมัติ |
 | 1.2 | 2569-11-03 | CR-10: ปิด Q-14 (R3 หักค่าเดินทาง 100 บาท) Q-34 (gateway ปฏิเสธ) Q-35 (ไม่รับปากจำนวนวัน) เพิ่ม AC-08-11, AC-08-12 AC-08-06 เหลือแถว R6 ส่วน 12 แก้ UI-08-01 และ UI-08-02 เพิ่ม D-08-05 ย้าย Q-33 ไป R2 | เงื่อนไขของ CR-06 ก่อนเปิด R1 ประชุม EV-048 | กลุ่ม X, SH-01 อนุมัติ |
 | 1.3 | 2569-11-23 | CR-11: ลูกค้ามาจากการเข้าสู่ระบบ (REQ-SEC-014) refund-quote และ customer-cancel ไม่ใช้ customer_id ในคำขอ AC เดิมไม่เปลี่ยนข้อความ test เปลี่ยนตามตารางของ CR-11 CR-12: cancel_job ใช้ R4 แบบ "ลูกค้าปฏิเสธช่างแทน" (ธง substitute_declined) และยกเลิกโดยระบบเมื่อหาช่างใหม่ไม่ได้ (UC-05) ไม่แจ้งช่างเดิมซ้ำ | ประชุมงวด 1 ของ R2 EV-051 | กลุ่ม X, SH-01 อนุมัติ |
+| 1.4 | 2569-12-10 | CR-18: mockup UI-08-01 เพิ่มสถานะ 4 (คำตอบ 403 ข้อความเดียวกับไม่พบงาน) ปิด GAP-26 ส่วน 8 อ้าง Constraint กลางรุ่น 1.4 CR-16: คืนเงินที่ไม่รู้ผลปิดด้วยการกระทบยอดของ Finance (specs/010-reconciliation ปิด Q-41 ฉบับเต็ม) ข้อความของ REQ และ AC เดิมไม่เปลี่ยน | ประชุมงวด 2 ของ R2 (EV-053) Baseline B7 |
 
 ## 1. Intent
 
@@ -71,7 +72,7 @@ Job(status) | JobStatusHistory | TimeSlot(state) | Refund(amount, rule, gateway_
 
 ## 8. Constraints
 
-Constraint กลาง: ใช้ทุกข้อใน specs/000-shared/constraints.md รุ่น 1.1 (ห้ามคัดลอกข้อความมาไว้ที่นี่) (เดิมรุ่น 1.0 เปลี่ยนตาม CR-07)
+Constraint กลาง: ใช้ทุกข้อใน specs/000-shared/constraints.md รุ่น 1.4 (ห้ามคัดลอกข้อความมาไว้ที่นี่) (เดิมรุ่น 1.0 เปลี่ยนตาม CR-07) (รุ่น 1.1 เปลี่ยนเป็น 1.4 ตาม CR-18 Baseline B7)
 ข้อยกเว้นของ feature นี้: ไม่มี
 เฉพาะ feature นี้: ไม่มี (REQ-CON-003 Payment Gateway รายเดิม เป็น Constraint กลางและ feature นี้ใช้จริง ดู plan.md ข้อ 5)
 

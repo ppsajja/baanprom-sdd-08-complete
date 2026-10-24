@@ -1,6 +1,6 @@
 # Model Set | บ้านพร้อม (MD set v0.1)
 
-รุ่น 0.1 (6 ก.ย. 2569) | เจ้าของ: กลุ่ม X | เขียนด้วย Mermaid เปิดดูภาพได้บน GitHub
+รุ่น 0.1 (6 ก.ย. 2569) | รุ่นปัจจุบัน: B7 (10 ธ.ค. 2569 CR-14 ถึง CR-19 แก้ MD-UCD-01 MD-CTX-01 MD-SYS-01 MD-DOM-01 ส่วน 9 ให้ตรงระบบที่ส่งมอบ ภาพเดิมของรุ่น 0.1 ไม่เก็บซ้ำ ดูได้จาก git tag B1) | เจ้าของ: กลุ่ม X | เขียนด้วย Mermaid เปิดดูภาพได้บน GitHub
 มาจากบทเรียน: Integrated Requirements Modelling
 ช่องที่ทำเครื่องหมาย ? คือคำถามที่โมเดลเปิดเผย ไม่ใช่ความผิดพลาด ทุกช่อง ? มีเจ้าของใน cc-log.md หรือ questions.md
 ภาพต้นฉบับขนาดเต็มอยู่ในหน้าบทเรียน Modelling ไฟล์นี้คือฉบับข้อความที่ diff ได้
@@ -17,60 +17,92 @@
 | ถ้าระบบชำระเงินเงียบระหว่างจอง ใครรอ ใครปล่อยช่วงเวลา | การเชื่อมต่อ | MD-SEQ-07-05 และ Interface Contract IF-01 | Baseline model | มีเวลารอ และมีผลต่อเงินที่ย้อนกลับไม่ได้ |
 | ข้อมูลส่วนบุคคลไหลไปไหน ใครเขียนใครอ่าน | ข้อมูล | DFD ระดับ 0 | Working model | ใช้ต่อในบทเรียนความปลอดภัย |
 
-## 1. MD-UCD-01 Use Case Diagram ทั้งระบบ
+## 1. MD-UCD-01 Use Case Diagram ทั้งระบบ (รุ่น B7)
 
-วงรีแทนด้วยกล่องมุมโค้งของ Mermaid | R1 = รุ่นแรก | R2 = เลื่อน | ? = ยังไม่กำหนดรุ่น
+วงรีแทนด้วยกล่องมุมโค้งของ Mermaid | R1 = รับใน B5 | R2 = ส่งมอบใน B6 หรือ B7 | Won't = ตัดสินแล้วว่าไม่ทำในสัญญานี้
 
 ```mermaid
 flowchart LR
   C[ลูกค้า]
   T[ช่าง]
   CC[เจ้าหน้าที่ call center]
-  OP[เจ้าของ / ฝ่ายปฏิบัติการ]
+  FIN[Finance]
+  OPS[Ops]
   subgraph SYS[ระบบบ้านพร้อม]
     U07([UC-07 จองงานบริการซ่อมบำรุง R1])
     U03([UC-03 ค้นหาช่างที่ว่าง R1])
     U06([UC-06 ชำระมัดจำ R1])
-    U10([UC-10 รับแจ้งเตือน R1])
+    U10([UC-10 รับแจ้งเตือน SMS หรือ LINE R1 และ R2 B7])
     U08([UC-08 ยกเลิกการจองและรับเงินคืน R1])
     U09([UC-09 อัปเดตสถานะงานภาคสนาม R1])
-    U05([UC-05 จับคู่ช่างใหม่เมื่อช่างปฏิเสธ R2 ทำแล้ว B6])
-    U02([UC-02 ลงทะเบียนและเข้าสู่ระบบของลูกค้า R2 ทำแล้ว B6])
-    U11([UC-11 ให้คะแนนช่างหลังจบงาน R2])
-    U01([UC-01 ช่างเข้าสู่ระบบ R2 ทำแล้ว B6])
-    U04([UC-04 จัดการตารางเวลาว่าง ?])
-    U12([UC-12 รับงานหรือปฏิเสธงาน R2 ทำแล้ว B6])
-    U13([UC-13 กระทบยอดปลายวัน ?])
+    U05([UC-05 จับคู่ช่างใหม่เมื่อช่างปฏิเสธ R2 B6])
+    U02([UC-02 ลงทะเบียน เข้าสู่ระบบ ที่อยู่ของลูกค้า R2 B6 B7])
+    U11([UC-11 ให้คะแนนช่างหลังจบงาน R2 B7])
+    U01([UC-01 ช่างเข้าสู่ระบบ R2 B6])
+    U04([UC-04 จัดการตารางเวลาว่างและวันหยุด R2 B7])
+    U12([UC-12 รับงานหรือปฏิเสธงาน R2 B6])
+    U13([UC-13 กระทบยอดกับรายงานของ gateway R2 B7])
+    U14([UC-14 ผู้ช่วยตอบคำถามและเลื่อนนัด R1 ส่งแบบปิด B4 R2 B7])
   end
   PG[[IF-01 Payment Gateway]]
-  SMS[[IF-02 ระบบส่งข้อความ]]
+  SMS[[IF-02 ระบบส่งข้อความ SMS และ LINE]]
   MAP[[IF-03 บริการแผนที่]]
   ID[[IF-04 Thai-ID / DBD-ID]]
+  LLM[[IF-05 บริการ LLM]]
   C --- U07
   C --- U08
   C --- U02
   C --- U11
-  CC -.-|A2 เป็น R2| U07
+  C --- U14
+  CC -.-|A2 Won't ใน R2| U07
   CC --- U09
+  CC --- U14
   T --- U09
   T --- U01
   T --- U04
   T --- U12
-  OP --- U13
+  FIN --- U13
+  OPS --- U14
   U07 -.->|include| U03
   U07 -.->|include| U06
   U07 -.->|include| U10
   U08 -.->|include| U10
   U09 -.->|include| U10
+  U13 -.->|include| U10
   U05 -.->|extend ที่ E3| U07
   U06 --- PG
   U08 --- PG
+  U13 --- PG
   U10 --- SMS
   U03 --- MAP
-  U01 -.-|Q-69 ยังไม่เชื่อมใน R2| ID
+  U02 --- MAP
+  U14 --- LLM
+  U01 -.-|Q-69 Won't ใน R2| ID
 ```
 
-กติกาที่ตรวจแล้ว: ทุก use case ชี้ไปหา REQ-FN อย่างน้อยหนึ่งข้อ หรือบันทึกว่ายังไม่มี (UC-04, UC-12, UC-13) | actor ตรงกับ stakeholders.md | ไม่มี generalization เพราะยังไม่มีหลักฐานว่ามีลูกค้าหรือช่างชนิดย่อย
+สถานะของทุก use case ใน B7
+
+| UC | ไฟล์ | spec | AC | สถานะ |
+|---|---|---|---|---|
+| UC-01 | UC-01.md | 006-identity | AC-01-01 ถึง 03 | ส่งมอบ (IF-04 Won't) |
+| UC-02 | UC-02.md | 006-identity | AC-02-01 ถึง 14 | ส่งมอบ |
+| UC-03 | ขั้น 2 ของ UC-07 | 002-booking | AC-07-02, AC-07-08 | ส่งมอบ |
+| UC-04 | UC-04.md | 008-schedule | AC-04-01 ถึง 08 | ส่งมอบ |
+| UC-05 | UC-05.md | 007-accept-rematch | AC-05-01 ถึง 06 | ส่งมอบ |
+| UC-06 | ขั้น 5 ของ UC-07 | 002-booking | AC-07-01, 05, 06, 12, 13 | ส่งมอบ |
+| UC-07 | UC-07.md | 002-booking | AC-07-01 ถึง 24 | ส่งมอบ (A2 นอกขอบเขต) |
+| UC-08 | UC-08.md | 004-cancel-refund | AC-08-01 ถึง 12 | ส่งมอบ |
+| UC-09 | UC-09.md | 003-job-status | AC-09-01 ถึง 16 | ส่งมอบ |
+| UC-10 | UC-10.md | 011-notifications | AC-10-01 ถึง 07 | ส่งมอบ (SMS LINE เป็นตัวจำลองจนผู้ว่าจ้างทำสัญญา) |
+| UC-11 | UC-11.md | 009-rating | AC-11-01 ถึง 08 | ส่งมอบ |
+| UC-12 | UC-12.md | 007-accept-rematch | AC-12-01 ถึง 05 | ส่งมอบ |
+| UC-13 | UC-13.md | 010-reconciliation | AC-13-01 ถึง 08 | ส่งมอบ |
+| UC-14 | UC-14.md | 005-ai-assistant | AC-14-01 ถึง 19 | ส่งมอบแบบปิด LLM ตัวจริง ชั้นที่ 2 ของการรับรอการนำร่อง |
+
+ตารางนี้ตรวจด้วยสคริปต์ scripts/check_rtm.py (ทุก UC มี AC และทุก AC มี test) ผลอยู่ใน docs/srs/rtm-all.md
+ภาพรุ่น 0.1 เดิมมี UC-04 และ UC-13 เป็น "?" และไม่มี UC-14 เพราะ UC-14 มาทีหลังใน CR-09
+
+กติกาที่ตรวจแล้ว (รุ่น 0.1): ทุก use case ชี้ไปหา REQ-FN อย่างน้อยหนึ่งข้อ หรือบันทึกว่ายังไม่มี (UC-04, UC-12, UC-13 B7 มีครบแล้ว REQ-FN-066 067 061 070 071) | actor ตรงกับ stakeholders.md | ไม่มี generalization เพราะยังไม่มีหลักฐานว่ามีลูกค้าหรือช่างชนิดย่อย
 
 ความครอบคลุม REQ-FN กับ UC
 
@@ -82,40 +114,47 @@ flowchart LR
 | REQ-FN-014 | UC-09 และ UC-10 (R1 ยังไม่ทำ เป็น Should) |
 | REQ-FN-030 | ยังไม่มี UC รองรับ (Could) |
 
-## 2. MD-CTX-01 Context Diagram ทั้งระบบ
+## 2. MD-CTX-01 Context Diagram ทั้งระบบ (รุ่น B7)
 
 ```mermaid
 flowchart LR
-  C[ลูกค้า] -->|คำขอจอง / ยืนยัน / ยกเลิก| S((ระบบบ้านพร้อม))
-  T[ช่าง] -->|รับงาน / ปฏิเสธ / สถานะงาน| S
-  A[เจ้าหน้าที่ call center] -->|จองแทนลูกค้า A2 / ดูสถานะ| S
-  O[เจ้าของ / ฝ่ายปฏิบัติการ] -->|กระทบยอด| S
-  S -->|IF-01 ตัดมัดจำ / คืนเงิน / สอบถามสถานะ| PG[Payment Gateway]
-  S -->|IF-02 ส่งข้อความแจ้งเตือน| SMS[ระบบส่งข้อความ]
-  S -->|IF-03 ระยะทางจากพิกัด| MAP[บริการแผนที่]
-  S -->|IF-04 ยืนยันตัวตนช่าง| ID[Thai-ID / DBD-ID]
+  C[ลูกค้า] -->|ลงทะเบียน จอง ยกเลิก ให้คะแนน ถามผู้ช่วย ตั้งช่องทาง| S((ระบบบ้านพร้อม))
+  T[ช่าง] -->|ตารางเวลา รับงาน ปฏิเสธ สถานะงาน ตั้งช่องทาง| S
+  A[เจ้าหน้าที่ call center] -->|ดูงาน ปิดผู้ช่วย ตั๋ว เลื่อนนัดกลับ| S
+  F[Finance] -->|รายงานประจำวันของ gateway| S
+  O[Ops] -->|สถานะระบบภายนอก ลบข้อมูล คำสั่งของคนเวร| S
+  S -->|IF-01 ตัดมัดจำ คืนเงิน สอบถามสถานะ| PG[Payment Gateway]
+  PG -->|IF-01 รายงานประจำวัน ไฟล์ที่ Finance ดาวน์โหลด| F
+  S -->|IF-02 SMS และ OTP| SMS[ผู้ให้บริการ SMS]
+  S <-->|IF-02 LINE push และ webhook| LINE[LINE Messaging]
+  S -->|IF-03 หาพิกัดจากข้อความ ระยะทาง| MAP[บริการแผนที่]
+  S -->|IF-05 ข้อความที่ปิดบังแล้ว ข้อมูลที่อนุญาต| LLM[บริการ LLM]
 ```
 
-call center อยู่นอกวงกลม เพราะเจ้าหน้าที่เป็นผู้ใช้ ไม่ใช่ส่วนหนึ่งของระบบ
-เส้น IF-01 เสี่ยงที่สุด เพราะเกี่ยวกับเงินและมี timeout
+call center Finance Ops อยู่นอกวงกลม เพราะเป็นผู้ใช้ ไม่ใช่ส่วนหนึ่งของระบบ ทุกบทบาทใช้กุญแจของตัวเอง (REQ-SEC-015)
+ทุกเส้นไปผู้ให้บริการภายนอกมีตัวจำลองที่ใช้อยู่ และตัวจริงที่เปิดด้วยค่าตั้ง (REQ-IF-012) รายการอยู่ใน docs/handover/mocks-and-limits.md
+IF-04 (Thai-ID) ไม่มีเส้นใน B7 เพราะ Q-69 เป็น Won't ใน R2
 
 | เส้น | ระบบภายนอก | ข้อมูล | ทิศทาง | REQ |
 |---|---|---|---|---|
-| IF-01 | Payment Gateway | ยอดมัดจำ reference ผลชำระ การคืนเงิน | สองทาง | REQ-IF-001, REQ-IF-005, REQ-IF-006 |
-| IF-02 | ระบบส่งข้อความ | เบอร์โทร (PII) ข้อความ สถานะส่ง | สองทาง | REQ-IF-002, REQ-CMP-00x |
-| IF-03 | บริการแผนที่ | พิกัดที่อยู่และจุดตั้งต้นช่าง ระยะทาง | สองทาง | BR-03 (ยังไม่มี REQ-IF ของตัวเอง) |
-| IF-04 | Thai-ID / DBD-ID | คำขอและผลการยืนยันตัวตน | สองทาง | ยังไม่มี REQ-IF (UC-01 อยู่ R2) |
+| IF-01 | Payment Gateway | ยอดมัดจำ reference ผลชำระ การคืนเงิน รายงานประจำวัน | สองทาง | REQ-IF-001, REQ-IF-005, REQ-IF-010, REQ-FN-070, REQ-IF-012 |
+| IF-02 | SMS และ LINE | เบอร์โทรหรือรหัส LINE (PII) ข้อความ ผลการส่ง | สองทาง | REQ-FN-012, REQ-FN-072, REQ-FN-073, REQ-SEC-013, REQ-IF-012 |
+| IF-03 | บริการแผนที่ | ข้อความที่อยู่ (หาพิกัด) พิกัด ระยะทาง | สองทาง | REQ-FN-074, REQ-PRV-011, REQ-QA-010, REQ-IF-012 |
+| IF-05 | บริการ LLM | ข้อความที่ปิดบังแล้ว ข้อมูลที่อนุญาตตาม REQ-DAT-010 | สองทาง | REQ-DAT-010, REQ-AI-023, REQ-IF-012 |
+| IF-04 | Thai-ID / DBD-ID | ไม่มีใน B7 | | Q-69 Won't ใน R2 |
+
+ภาพรุ่น 0.1 (เส้น A2 ของ call center และ IF-04) อยู่ใน git tag B1
 
 ## 3. MD-SYS-01 System Overview (product perspective ไม่ระบุเทคโนโลยี)
 
 | ส่วน | use case ที่ใช้ |
 |---|---|
-| แอปลูกค้า | UC-07, UC-08, UC-02, UC-11 |
-| แอปช่าง | UC-09, UC-01, UC-04, UC-12 |
-| คอนโซลเจ้าหน้าที่ | UC-07 A2, UC-09 (ดูสถานะ), UC-13 |
+| แอปลูกค้า | UC-02, UC-07, UC-08, UC-10 (ตั้งช่องทาง), UC-11, UC-14 |
+| แอปช่าง | UC-01, UC-04, UC-09, UC-10 (ตั้งช่องทาง), UC-12 |
+| คอนโซลเจ้าหน้าที่ (B7) | call center: UC-09 (ดูสถานะ) UC-14 (ปิดผู้ช่วย ตั๋ว เลื่อนกลับ) Finance: UC-13 UC-07 A2 ไม่อยู่ใน R2 |
 | แกนกลางบริการจองและงาน | ทุก use case |
 | ที่เก็บข้อมูล | D1 ถึง D4 ในส่วน 9 |
-| ระบบภายนอก | IF-01 ถึง IF-04 |
+| ระบบภายนอก | IF-01, IF-02, IF-03, IF-05 (IF-04 Won't ใน R2) |
 
 สถาปัตยกรรมที่ระบุเทคโนโลยีเป็นเรื่องของ plan.md ไม่ใช่ของสเปก
 
@@ -189,7 +228,7 @@ flowchart TB
 
 REQ และ UC ที่อ้าง: UC-07 ทุกขั้น, REQ-FN-008, REQ-FN-041, REQ-FN-012, REQ-IF-001, BR-01, BR-02, BR-03
 
-## 6. MD-DOM-01 Domain Model (conceptual ทั้งระบบ)
+## 6. MD-DOM-01 Domain Model (conceptual ทั้งระบบ รุ่น B7)
 
 ```mermaid
 classDiagram
@@ -197,25 +236,41 @@ classDiagram
   class Account { role; subjectId; phoneNorm PII (CR-11) }
   class AuthSession { tokenHash; expiresAt; revokedAt (CR-11 REQ-SEC-014) }
   class JobAssignment { technicianId; respondBy; response MD-STM-04 (CR-12) }
-  class ServiceAddress { addressId; text; geoPoint PII Q-22 }
-  class Technician { technicianId; name; skills; baseGeoPoint; rating ? CC-06 }
+  class ServiceAddress { addressId; text; geoPoint PII REQ-PRV-011 จาก IF-03 (CR-18) }
+  class Technician { technicianId; name; skills; baseGeoPoint }
+  class TechnicianDayOff { day; closedSlots (CR-14 BR-10) }
   class ServiceCategory { categoryId; name; depositAmount Finance REQ-BR-002 }
-  class TimeSlot { slotId; start; end; state: ว่าง | ล็อกชั่วคราว | จองแล้ว; holdExpiresAt }
+  class TimeSlot { slotId; start; end; state: ว่าง | ล็อกชั่วคราว | จองแล้ว | ปิด (MD-STM-05); holdExpiresAt }
   class Job { jobId; category; status (MD-STM-01); depositAmount; scheduledStart }
+  class JobReschedule { fromSlot; toSlot; byRole; reference (BR-06 REQ-FN-075) }
   class Payment { paymentId; amount; gatewayRef; result: สำเร็จ | ล้มเหลว | หมดเวลา }
-  class Refund { refundId; amount; rule R1..R6 }
-  Customer "1" --> "1..*" ServiceAddress : AS-03
+  class Refund { refundId; amount; rule R1..R6; result (MD-STM-06) }
+  class Rating { stars 1..5; comment ปิดบังแล้ว PII; counted (CR-15 BR-11) }
+  class ReconciliationRun { day; fileHash; counts (CR-16 BR-13) }
+  class ReconciliationItem { kind; type; reference; systemAmount; reportAmount }
+  class NotificationPreference { role; subjectId; channel SMS | LINE; lineUserId PII (CR-17 BR-12) }
+  class NotificationDelivery { channel; result; fallback (ไม่มีข้อความหรือเบอร์) }
+  Customer "1" --> "1..*" ServiceAddress : AS-03 ลบได้เมื่อไม่มีงานอ้าง
   Customer "1" --> "0..*" Job
   Customer "1" --> "0..1" Account : CR-11
   Account "1" --> "0..*" AuthSession : CR-11
   Job "1" --> "1..*" JobAssignment : CR-12 ช่างหนึ่งคนต่อหนึ่งแถว
-  Technician "1" --> "0..*" TimeSlot : BR-02 ไม่ซ้อนกัน
+  Job "1" --> "0..*" JobReschedule : BR-06 ไม่เกิน 2 ครั้ง ไม่นับการเลื่อนกลับ
+  Technician "1" --> "0..*" TimeSlot : BR-02 BR-10 ไม่ซ้อนกัน
+  Technician "1" --> "0..*" TechnicianDayOff : BR-10
   Job "1" --> "1" TimeSlot
   Job "1" --> "1" Technician : ช่างหลัก
   Job "*" --> "1" ServiceCategory
-  Job "1" --> "0..1" Payment : ? ชำระใหม่นับเป็น Payment ใหม่ไหม
+  Job "1" --> "0..1" Payment : ชำระใหม่เป็นการจองใหม่
   Job "1" --> "0..1" Refund : BR-01
+  Job "1" --> "0..1" Rating : BR-11 งานละครั้ง
+  ReconciliationRun "1" --> "0..*" ReconciliationItem : BR-13 รายการต่าง
+  NotificationPreference "1" --> "0..*" NotificationDelivery : ต่อผู้รับ
 ```
+
+ภาพนี้เป็นระดับแนวคิด ชื่อตารางจริงอยู่ใน backend/app/db/models.py และ data-dictionary.md
+Technician.rating ของรุ่น 0.1 (CC-06 Q-20) ไม่ได้เก็บเป็นช่อง ค่าเฉลี่ยคำนวณจาก Rating ที่นับได้ทุกครั้ง (BR-11 ข้อ 6)
+คำถามเดิม "ชำระใหม่นับเป็น Payment ใหม่ไหม" ตอบด้วยพฤติกรรมที่ส่งมอบ: ชำระไม่สำเร็จงานยกเลิกอัตโนมัติ ลูกค้าจองใหม่เป็นงานใหม่ (UC-07 E1)
 
 - งานหนึ่งมีช่างหลักหนึ่งคน (BR ชนิด Facts) จึงเป็น multiplicity 1 ฝั่ง Technician
 - Job กับ Payment ยังตอบไม่ได้ ถ้าชำระล้มเหลวแล้วชำระใหม่ นับเป็น Payment ใหม่หรือแก้รายการเดิม ?
@@ -261,6 +316,11 @@ CR-12 (B6): ลูกศรของ E3 สร้างจริงแล้ว 
 
 คอลัมน์สุดท้ายมาจาก REQ-OP-002 (หมวด Operational) แต่กระทบ State Machine โดยตรง
 
+B7 (EV-053) ช่อง ? ทุกช่องมีคำตอบแล้ว โดยไม่มีสถานะหรือลูกศรใหม่ ภาพข้างบนจึงตรงกับระบบที่ส่งมอบ
+- Q-48 ยกเลิกขณะ "รอชำระเงิน" ไม่ได้ ปล่อยหมดเวลาตาม E1 | Q-49 Q-54 Won't ใน R2 ไม่มีโหมดออฟไลน์ เหตุการณ์ที่ข้ามลำดับตอบ 409 | Q-50 2 ชั่วโมง (B6)
+- Q-51 Q-53 ช่างทิ้งงาน Won't ใน R2 call center จัดการ (operations.md เหตุการณ์ที่ 10) | Q-52 ยกเลิกระหว่าง "กำลังดำเนินงาน" ไม่ได้ ใช้การร้องเรียน
+- การเลื่อนนัด (UC-14 และเลื่อนกลับของ call center) ไม่เปลี่ยนสถานะงาน เปลี่ยนเฉพาะช่วงเวลา (JobReschedule)
+
 ## 8. MD-SEQ-07-05 ลำดับการชำระมัดจำ (UC-07 ขั้น 5 รวม E1 และ E2)
 
 ```mermaid
@@ -305,6 +365,23 @@ Activity บอกว่ารอ 30 นาที (payment-window) แต่ Seq
 | ความปลอดภัย / PII | ไม่ส่งข้อมูลลูกค้าเกินจำเป็น (REQ-PRV) | เบอร์โทรออกนอกระบบ ต้องมี DPA กับผู้ให้บริการ (REQ-CMP-00x) |
 | วิธีตรวจ | Contract test และ sandbox ของ gateway จำลอง timeout | Contract test และ stub |
 | REQ-ID | REQ-IF-001, REQ-IF-005 (ใหม่), REQ-IF-006 (ใหม่) | REQ-IF-002, REQ-CMP-00x (ใหม่) |
+
+### 9.1 สัญญา interface ของตัวจริงที่สลับได้ (รุ่น B7 REQ-IF-012)
+
+ตารางข้างบนคือร่างของรุ่น 0.1 ตารางนี้คือสัญญาที่ตัวจริงใน backend/app/integrations/ เขียนตาม และ test_AC_00_13 ตรวจผ่าน transport จำลอง (ไม่ใช้เครือข่าย)
+ผู้ว่าจ้างต้องให้ผู้ให้บริการยืนยันสัญญานี้ หรือแก้ตัวจริงตามสัญญาของผู้ให้บริการก่อนเปิดใช้ (docs/handover/mocks-and-limits.md)
+
+| ช่อง | IF-01 Payment Gateway | IF-02 SMS | IF-02 LINE | IF-03 แผนที่ | IF-05 LLM |
+|---|---|---|---|---|---|
+| เลือกด้วย | PAYMENT_ADAPTER=http | SMS_ADAPTER=http | LINE_ADAPTER=http | MAP_ADAPTER=http | LLM_ADAPTER=http |
+| ค่าที่ต้องตั้ง | PAYMENT_API_URL, PAYMENT_API_KEY | SMS_API_URL, SMS_API_KEY | LINE_CHANNEL_TOKEN, LINE_CHANNEL_SECRET | MAP_API_URL, MAP_API_KEY | LLM_API_URL, LLM_API_KEY, LLM_MODEL |
+| คำขอ | POST /payments/authorize, POST /payments/{ref}/capture, /void, /refunds, GET /payments/{ref} | POST /messages, POST /data-subjects/erase | POST /v2/bot/message/push | GET /geocode?q=, POST /distances | POST (URL ที่ตั้ง) |
+| กันทำซ้ำ | header Idempotency-Key = reference (คืนเงิน reference-refund) | ไม่มี (คิวกันส่งซ้ำ REQ-OP-008) | ไม่มี | ไม่เกี่ยว (อ่านอย่างเดียว) | ไม่เกี่ยว |
+| เวลารอ | 30 วินาที (Q-19) | 10 วินาที | 10 วินาที | 5 วินาที | 2 เท่าของ p95 ที่รับ (QAS-1) |
+| เมื่อไม่ตอบ | GatewayTimeout ตามเดิม (REQ-IF-005) | NotifierTimeout คิวส่งซ้ำ | ส่ง SMS แทน (BR-12 ข้อ 4) | MapTimeout ใช้ระยะเส้นตรง หาพิกัดตอบให้ลองใหม่ | คำตอบสำรองจากโค้ด (GAP-50) |
+| ข้อมูลส่วนบุคคล | ไม่ส่ง | เบอร์โทร ข้อความ | รหัส LINE ข้อความ | ข้อความที่อยู่ ไม่มีชื่อหรือเบอร์ (REQ-PRV-011) | ข้อความที่ปิดบังแล้ว (REQ-DAT-010 Q-56) |
+| ขาเข้า | รายงานประจำวันเป็นไฟล์ CSV หัว date,type,reference,amount,status (BR-13 ข้อ 1) Finance ดาวน์โหลดเอง (Q-72) | | webhook /integrations/line/webhook ตรวจ X-Line-Signature (HMAC-SHA256) | | |
+| ตัวจำลองที่ใช้อยู่ | FakeGateway (FAKE_GATEWAY_MODE) | MockSms (MOCK_SMS_MODE) | MockLine (MOCK_LINE_MODE) | MockMap รายชื่อเขต 15 เขต (MOCK_MAP_MODE) | MockLLM mock-1.1 |
 
 ## 10. DFD ระดับ 0 ของรุ่น R1
 

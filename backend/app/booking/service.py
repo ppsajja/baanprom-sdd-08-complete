@@ -9,7 +9,7 @@ from app.db.models import (TimeSlot, Job, Customer, ServiceAddress, set_status,
 from app.payments.gateway import Gateway
 from app.payments.service import charge_deposit, pending_payment_of, retry_pending
 from app.notify.queue import queue
-from app.technicians.service import release_expired_holds, find_alternatives
+from app.technicians.service import release_expired_holds, find_alternatives, unavailable
 
 
 class SlotTaken(Exception):
@@ -39,7 +39,7 @@ class PaymentFailed(Exception):
 def hold_slot(db, slot: TimeSlot, customer_id: int, now: datetime) -> TimeSlot:
     # รองรับ REQ-FN-041: ล็อก HOLD_MINUTES นาที (Q-18) ถ้าคนอื่นล็อกอยู่ให้ปฏิเสธ
     release_expired_holds(db, now)
-    if slot.state == SLOT_BOOKED or (slot.state == SLOT_HELD and slot.held_by_customer_id != customer_id):
+    if unavailable(slot.state, slot.held_by_customer_id, customer_id):  # CR-14: ช่วงที่ช่างปิดก็ล็อกไม่ได้
         raise SlotTaken(find_alternatives(db, slot, now, customer_id))
     # รองรับ REQ-SEC-011 (CR-07): ล็อกช่วงอื่นที่ยังไม่หมดอายุของลูกค้าคนนี้ นับรวมแล้วต้องไม่เกินเพดาน
     others = db.scalars(select(TimeSlot).where(TimeSlot.state == SLOT_HELD,
@@ -90,7 +90,7 @@ def create_booking(db, customer: Customer, slot: TimeSlot, address: ServiceAddre
     if existing is not None and (payment := pending_payment_of(db, existing)) is not None:
         return _finish_payment(db, existing, slot, customer, retry_pending(db, payment, gateway), now)
     # รองรับ AC-07-04 (E2): ถ้า slot ไม่ได้ล็อกโดยลูกค้าคนนี้ ไม่ตัดเงิน และเสนอช่วงใกล้เคียง
-    if slot.state == SLOT_BOOKED or (slot.state == SLOT_HELD and slot.held_by_customer_id != customer.id):
+    if unavailable(slot.state, slot.held_by_customer_id, customer.id):  # CR-14: รวมช่วงที่ช่างปิด
         raise SlotTaken(find_alternatives(db, slot, now, customer.id))
     if slot.state == SLOT_FREE:
         hold_slot(db, slot, customer.id, now)  # กดยืนยันโดยไม่ได้ล็อกก่อน ให้ล็อกให้ทันที
@@ -119,9 +119,9 @@ def _finish_payment(db, job: Job, slot: TimeSlot, customer: Customer, payment, n
         # CR-12 REQ-FN-061: มอบงานให้ช่าง ช่างต้องรับหรือปฏิเสธภายใน 30 นาที (UC-12)
         from app.matching.service import offer
         offer(db, job, now)
-        # รองรับ REQ-FN-012: วางข้อความถึงสองฝ่ายลงคิว ไม่รอผลส่ง
+        # รองรับ REQ-FN-012: วางข้อความถึงสองฝ่ายลงคิว ไม่รอผลส่ง CR-17 (F-20): ข้อความถึงช่างบอกเวลาที่ต้องตอบรับ
         queue.enqueue("customer", customer.id, f"จองสำเร็จ งาน #{job.id} {slot.start:%d/%m %H:%M}", job.id, now, db=db)
-        queue.enqueue("technician", slot.technician_id, f"มีงานใหม่ #{job.id} {slot.start:%d/%m %H:%M}", job.id, now, db=db)
+        queue.enqueue("technician", slot.technician_id, f"มีงานใหม่ #{job.id} {slot.start:%d/%m %H:%M} กดรับงานหรือปฏิเสธภายใน {config.TECH_RESPONSE_MINUTES} นาที", job.id, now, db=db)
         db.commit()
         return job
 
@@ -173,7 +173,9 @@ class RescheduleRejected(Exception):
 
 
 def reschedules_used(db, job: Job) -> int:
-    return len(db.scalars(select(JobReschedule).where(JobReschedule.job_id == job.id)).all())
+    # CR-18 (GAP-31, Q-62): การเลื่อนกลับโดย call center ไม่นับเป็นครั้งของ BR-06 ข้อ 2
+    return len(db.scalars(select(JobReschedule).where(JobReschedule.job_id == job.id,
+                                                      JobReschedule.by_role != "call_center")).all())
 
 
 def reschedule_window(now: datetime) -> tuple[datetime, datetime]:

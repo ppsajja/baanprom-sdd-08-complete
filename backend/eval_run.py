@@ -22,6 +22,12 @@ from app.assistant.llm import MockLLM  # noqa: E402
 SPEC = Path(__file__).resolve().parent.parent / "specs" / "005-ai-assistant"
 
 
+def heldout_ids() -> set[str]:
+    """CR-19: ชุดลับของผู้ว่าจ้าง (TOR ภาคผนวก ค) 50 ข้อจาก 200"""
+    path = SPEC / "eval" / "heldout.json"
+    return set(json.loads(path.read_text(encoding="utf-8"))["ids"]) if path.exists() else set()
+
+
 def eval_versions() -> dict:
     out = {}
     for name in ("qa", "reschedule", "injection"):
@@ -84,6 +90,15 @@ def md_report(res: dict, diag: dict, version: str, started: str, seconds: float)
             L.append(f"- {c['ac']} {c['name']}: {c['got']} จาก {c['total']}")
     if all(c["pass"] for c in diag["summary"]["criteria"] if c["kind"] == "abs"):
         L.append("- ไม่มีเกณฑ์เด็ดขาดที่ตก")
+    L.append("")
+    L.append("## 3.1 ชุดลับ 50 ข้อ (TOR ของ R2 ภาคผนวก ค ผู้รับจ้างไม่เคยเห็น)")
+    L.append("")
+    held = heldout_ids()
+    hq = [r for r in res["qa"] if r.id in held]
+    L.append(f"รายการข้ออยู่ใน specs/005-ai-assistant/eval/heldout.json | ข้อในชุดลับ {len(hq)} ข้อ | ถูกและครบ "
+             f"{sum(1 for r in hq if r.complete)} จาก {len(hq)} | เด็ดขาดไม่ผ่าน {sum(1 for r in hq if r.absolute_fail)} ข้อ "
+             f"| ชุดที่ผู้รับจ้างเห็น {len(res['qa']) - len(hq)} ข้อ ถูกและครบ {sum(1 for r in res['qa'] if r.id not in held and r.complete)}")
+    L.append("ใช้เทียบว่าผลบนชุดลับไม่ต่ำกว่าชุดที่เห็นอย่างมีนัย (ถ้าต่ำกว่ามาก แปลว่าระบบถูกปรับให้จำคำตอบของชุดที่เห็น)")
     L.append("")
     L.append("## 4. ข้อที่ไม่ \"ถูกและครบ\"")
     L.append("")

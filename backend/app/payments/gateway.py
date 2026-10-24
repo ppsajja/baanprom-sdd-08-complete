@@ -83,7 +83,16 @@ def _fake_from_env() -> FakeGateway:
                        refund_mode=os.getenv("FAKE_GATEWAY_REFUND_MODE", "approved"))
 
 
-_current: Gateway = _fake_from_env()
+def build_from_config() -> Gateway:
+    """CR-18 REQ-IF-012: PAYMENT_ADAPTER = fake (ค่าตั้งต้น FakeGateway) หรือ http (ตัวจริงตามสัญญา IF-01 ปิดไว้จนกว่าจะตั้งค่า)"""
+    from app.integrations import choice
+    if choice("payment") == "http":
+        from app.integrations.http_payment import HttpGateway
+        return HttpGateway()
+    return _fake_from_env()
+
+
+_current: Gateway = build_from_config()
 
 
 def get_gateway() -> Gateway:

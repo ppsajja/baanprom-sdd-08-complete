@@ -30,3 +30,7 @@
 - REQ นอก UC-07 (catalogue ส่วน 3) ยังไม่ได้ตามรอยถึง AC เพราะ use case ที่รองรับยังเป็นแบบ brief
 
 ตารางนี้เรียบเรียงจากรหัสที่มีอยู่ใน catalogue.md, UC-07.md, booking.feature และ models.md ไม่มีรหัสใหม่
+
+## 3. หลัง Baseline B7
+
+ตารางนี้เป็นสภาพตอน B1 (UC-07 อย่างเดียว) ตารางตามรอยทั้งระบบ UC-01 ถึง UC-14 อยู่ที่ docs/srs/rtm-all.md สร้างและตรวจด้วย scripts/check_rtm.py

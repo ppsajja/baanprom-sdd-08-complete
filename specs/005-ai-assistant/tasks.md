@@ -171,3 +171,21 @@ Feature: SPEC-ASSISTANT | อ้างอิง: plan.md (plan v1) | สร้�
 - ต้องทำหลัง: T-30 ของ 002
 - เสร็จเมื่อ: eval 20 จาก 20 เกณฑ์ และ eval set มีบันทึกรุ่น 1.1 ใน CHANGELOG
 - สถานะ: เสร็จ
+
+### ส่วนที่เพิ่มตาม CR-19 และ CR-18 (tasks v3, 10 ธ.ค. 2569)
+
+### T-14 Q-65 ชั้นที่ 3 ของการรับ ชุดลับของ eval set และ LLM ตัวจริงที่ปิดไว้ (CR-19)
+- รองรับ: REQ-AI-023, REQ-AI-006 (Q-65), REQ-AI-012 (F-16), REQ-IF-012 (IF-05)
+- ตรวจด้วย: AC-14-17, AC-14-18, AC-14-10 (test เพิ่ม), AC-00-13 และ eval ทั้งชุด
+- ไฟล์ที่แตะ: backend/app/assistant/llm.py, service.py, router.py, evaluation.py, policies/refund-timing.md, backend/eval_run.py, backend/app/integrations/http_llm.py, specs/005-ai-assistant/eval/qa.jsonl, heldout.json, CHANGELOG.md, README.md, backend/tests/test_assistant_r2b.py, test_assistant.py (บรรทัดเดียวตาม CR-19)
+- แบบหน้าจอ: ไม่มี
+- เสร็จเมื่อ: eval 21 จาก 21 เกณฑ์ ชุดลับรายงานแยก
+- สถานะ: เสร็จ
+
+### T-15 เครื่องมือ call center ปิดผู้ช่วยด้วยกุญแจของตัวเอง ตั๋ว เลื่อนนัดกลับ (CR-18)
+- รองรับ: REQ-FN-075, REQ-SEC-015, REQ-AI-022
+- ตรวจด้วย: AC-14-19, AC-00-15, UI-14-02
+- ไฟล์ที่แตะ: backend/app/callcenter/router.py, backend/app/auth/deps.py, backend/app/booking/service.py (reschedules_used), frontend/src/pages/CallCenterTools.jsx, App.jsx, api/client.js
+- แบบหน้าจอ: UI-14-02
+- สถานะ: เสร็จ
+

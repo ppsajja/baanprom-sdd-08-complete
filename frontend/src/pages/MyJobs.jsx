@@ -1,10 +1,46 @@
 // หน้างานของฉัน (ลูกค้า) ตามแบบ UI-02-03 (CR-11, CR-12) รองรับ REQ-FN-052, REQ-FN-063, REQ-SEC-010
 // เห็นเฉพาะงานของตัวเอง (GET /me/jobs) สถานะเป็นคำไทยตาม glossary งานที่ได้ช่างแทน (UC-05) มีปุ่ม "ไม่รับช่างแทน"
 // ยอดคืนมาจากระบบ (BR-01 R4) หน้าจอไม่คำนวณเอง
+// CR-15 (UC-11 UI-11-01): งานที่ระบบส่ง can_rate มีส่วน "ให้คะแนนช่าง" 1 ถึง 5 ดาวและความเห็นสั้น กฎทั้งหมดอยู่หลังบ้าน (BR-11)
 import { useEffect, useState } from 'react'
 import { statusTh, fmtDateTime } from '../statusNames.js'
 
-export default function MyJobs({ api }) {
+function RateForm({ job, ratingApi, onDone }) {
+  const [stars, setStars] = useState(0)
+  const [comment, setComment] = useState('')
+  const [error, setError] = useState('')
+
+  async function send() {
+    setError('')
+    const { status, body } = await ratingApi.rate({ jobId: job.job_id, stars, comment })
+    if (status !== 201) return setError(body.message ?? 'ส่งคะแนนไม่สำเร็จ')
+    onDone(body.message)
+  }
+
+  return (
+    <div className="mt-3 rounded-lg bg-slate-50 p-3" aria-label={`ให้คะแนนงาน #${job.job_id}`}>
+      <p className="text-sm text-slate-700">ให้คะแนนช่าง {job.technician_name}</p>
+      <div className="mt-1 flex gap-1" role="group" aria-label="จำนวนดาว">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" onClick={() => setStars(n)} aria-pressed={stars === n}
+            className={`rounded-md border px-3 py-1 text-sm ${stars >= n ? 'border-amber-500 bg-amber-100 text-amber-900' : 'border-slate-300 text-slate-600'}`}>
+            {n} ดาว
+          </button>
+        ))}
+      </div>
+      <label className="mt-2 block text-sm text-slate-600">ความเห็น (ไม่บังคับ ไม่เกิน 300 ตัวอักษร)
+        <textarea value={comment} maxLength={300} onChange={(e) => setComment(e.target.value)} rows={2}
+          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900" />
+      </label>
+      <p className="text-xs text-slate-500">ความเห็นไม่แสดงต่อลูกค้าคนอื่นและไม่แสดงชื่อคุณ ลูกค้าคนอื่นเห็นเฉพาะคะแนนเฉลี่ย</p>
+      <button type="button" disabled={!stars} onClick={send}
+        className="mt-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300">ส่งคะแนน</button>
+      {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+    </div>
+  )
+}
+
+export default function MyJobs({ api, ratingApi }) {
   const [jobs, setJobs] = useState(null)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
@@ -44,6 +80,8 @@ export default function MyJobs({ api }) {
                 {statusTh(j.status)}
               </span>
             </div>
+            {j.my_rating != null && <p className="mt-2 text-sm text-slate-600">คุณให้คะแนน {j.my_rating} ดาว</p>}
+            {j.can_rate && ratingApi && <RateForm job={j} ratingApi={ratingApi} onDone={(m) => { setNotice(m); load() }} />}
             {j.can_decline_substitute && (
               <div className="mt-3">
                 <p className="text-sm text-slate-700">ช่างคนเดิมไม่สะดวก ระบบหาช่างแทนให้ในเวลาเดิม ถ้าไม่ต้องการช่างแทน ยกเลิกได้และได้มัดจำคืนเต็มจำนวน</p>

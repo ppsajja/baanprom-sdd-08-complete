@@ -58,3 +58,17 @@ test หลังบ้านและหน้าจอผ่านทั้ง
 ## รอบ CR-10 (3 พ.ย. 2569)
 
 ผลของ AC ที่ CR-10 และ CR-02 เพิ่มหรือแก้ อยู่ในตารางรวมที่ specs/000-shared/ac-results.md ส่วน "รอบ CR-10 และ CR-02" AC อื่นของ feature นี้ผลเท่ารอบก่อน และ test ไม่ถูกแตะ ผลระหว่างตรวจรับ R1 อยู่ใน docs/acceptance/acceptance-record-r1.md
+
+## รอบ R2 ส่วน B (CR-19 CR-18, 10 ธ.ค. 2569) ผลจาก specs/000-shared/test-run.txt รอบสุดท้าย และ eval-results.md
+
+| AC | REQ | test | task | ผล | หมายเหตุ |
+|---|---|---|---|---|---|
+| AC-14-17 | REQ-AI-023 | test_AC_14_17_unaccepted_model_disables_assistant | T-14 | ผ่าน | |
+| AC-14-18 | REQ-AI-006, Q-65 | test_AC_14_18_refund_timing_mentions_issuing_bank, eval เกณฑ์ AC-14-18 5 จาก 5 | T-14 | ผ่าน | รอบแรกกับ mock-1.0 ไม่ผ่าน 0 จาก 5 (eval-results-round1-mock-1.0.md) |
+| AC-14-19 | REQ-FN-075, REQ-SEC-015 | test_AC_14_19_call_center_reverts_reschedule, UI-14-02.test.jsx | T-15 | ผ่าน | |
+| AC-14-10 (เพิ่ม) | REQ-AI-012 | test_AC_14_10_tool_timeout_after_effect_not_called_again | T-14 | ผ่าน | ปิด F-16 |
+| AC-14-11 | REQ-AI-013 | test_AC_14_11 (แก้บรรทัดรุ่นโมเดลตาม CR-19) | T-14 | ผ่าน | รอบแรกไม่ผ่านก่อนแก้ test (test-run-r2b-round1.txt) |
+| UI-14-01 | | UI-14-01.test.jsx เดิม | | ผ่าน | ภาพ .png ทำแล้ว ตรวจด้วยคนใน UAT R2 (GAP-33 ปิด) |
+| UI-14-02 | | UI-14-02.test.jsx (2 ตัว) | T-15 | ผ่าน | |
+
+eval รอบสุดท้าย: 21 จาก 21 เกณฑ์ ชุดลับ 50 จาก 50 ชุดที่เห็น 147 จาก 150 (eval-results.md)

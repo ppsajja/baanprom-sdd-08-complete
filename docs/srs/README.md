@@ -14,3 +14,10 @@
 | UC-01.md, UC-02.md, UC-05.md, UC-12.md | use case fully dressed ของการเข้าสู่ระบบ (UC-01 UC-02) และการรับงานกับจับคู่ช่างใหม่ (UC-12 UC-05) (เข้า B6 ตาม CR-11 CR-12) | บทเสริม การตรวจรับและการส่งมอบ (R2 ส่วน A) |
 
 กฎธุรกิจ (BR-01..03) และโมเดล (MD-xx) ที่ UC-07 ใช้ อยู่ใน specs/002-booking/rules.md และ models.md ส่วน BR-04 อยู่ใน specs/003-job-status/rules.md และ BR-05 ใน specs/004-cancel-refund/rules.md (MD-DOM-01 และ MD-STM-01 ใช้ร่วมทุก feature)
+| UC-04.md, UC-10.md, UC-11.md, UC-13.md | use case fully dressed ของตารางเวลา การแจ้งเตือน การให้คะแนน การกระทบยอด (เข้า B7 ตาม CR-14 ถึง CR-17) | บทเสริม การตรวจรับและการส่งมอบ (R2 ส่วน B) |
+| question-register.md | ทะเบียนคำถามทั้งโครงการ Q-05 ถึง Q-72 สถานะที่ B7 (ทุกข้อปิด) | R2 ส่วน B |
+| rtm-all.md | ตารางตามรอยทั้งระบบ EV ถึง test สร้างโดย scripts/check_rtm.py | R2 ส่วน B |
+| srs-index-r2.md | สารบัญ SRS ของ B7 ตาม 29148:2018 ข้อ 9.6 | R2 ส่วน B |
+
+หลัง B7: catalogue.md รุ่น 1.8 มี REQ ของทุก use case ที่ส่งมอบ baseline.md ด้านบนคือ B7 operations.md รุ่น 1.4 models.md ส่วน 1 2 3 6 และ 9.1 เป็นรุ่น B7
+

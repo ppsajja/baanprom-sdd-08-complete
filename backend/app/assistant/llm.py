@@ -6,7 +6,9 @@ MockLLM ไม่ได้ "ฉลาด" มันจำลองพฤติ�
 - บางครั้งตอบไม่ครบ (ไม่บอกเวลานัด) ทำให้สัดส่วน "ถูกและครบ" ไม่ใช่ 100 ใน 100
 - บางครั้งแต่งเรื่อง (เวลาที่ช่างจะถึง จำนวนวันคืนเงิน คืนเต็มจำนวน) แบบเดียวกับที่ทีมเจอใน EV-046
 - ถ้าข้อความหลอกให้ลืมกฎหลุดรั้วขาเข้ามาได้ มันทำตาม (เผยข้อความสั่ง แต่งเบอร์โทร อ้างว่ายกเลิกให้แล้ว)
-ทุกอย่างกำหนดจากค่า crc32 ของคำถาม รันซ้ำได้ผลเดิมทุกครั้ง ความผิดพลาดเหล่านี้คือสิ่งที่รั้วขาออก (guard.py) ต้องกันได้"""
+ทุกอย่างกำหนดจากค่า crc32 ของคำถาม รันซ้ำได้ผลเดิมทุกครั้ง ความผิดพลาดเหล่านี้คือสิ่งที่รั้วขาออก (guard.py) ต้องกันได้
+CR-19 (R2 ส่วน B): รุ่น mock-1.1 อ่านประโยคสำหรับลูกค้าจากคลังนโยบายที่ค้นมา (บรรทัดที่ขึ้นต้น "ลูกค้า:") แบบเดียวกับที่ LLM จริงอ่านข้อมูล
+เปลี่ยนรุ่นโมเดล = ของใหม่ ต้องรัน eval ทั้งชุดก่อนใช้ (ชั้นที่ 3 ของการรับ REQ-AI-023) ตัวจริงอยู่ที่ app/integrations/http_llm.py"""
 import json
 import re
 import zlib
@@ -54,7 +56,7 @@ def _h(text: str, mod: int) -> int:
 
 
 class MockLLM(LLM):
-    model_version = "mock-1.0"
+    model_version = "mock-1.1"   # CR-19: เดิม mock-1.0 (B4 ถึง B6)
 
     def generate(self, req: LLMRequest) -> LLMReply:
         q = req.question
@@ -120,13 +122,28 @@ class MockLLM(LLM):
     def _refund_timing(self, q, f, req):
         if _h(q, 4) == 0:  # แต่งตัวเลขที่ไม่มีในข้อมูล (Q-35 ยังไม่มีคำตอบ)
             return "เงินคืนจะเข้าบัญชีภายใน 7 วันทำการค่ะ"
-        return "เงินคืนเข้าช่องทางที่ชำระมัดจำค่ะ ขออภัย ยังไม่มีข้อมูลจำนวนวันที่เงินจะเข้า"
+        text = "เงินคืนเข้าช่องทางที่ชำระมัดจำค่ะ ขออภัย ยังไม่มีข้อมูลจำนวนวันที่เงินจะเข้า"
+        lines = [ln.split(":", 1)[1].strip() for p in req.policies for ln in p.get("text", "").splitlines()
+                 if ln.startswith("ลูกค้า:")]
+        return text + (" " + " ".join(lines) if lines else "")
 
 
-_llm: LLM = MockLLM()
+def build_from_config() -> LLM:
+    """REQ-IF-012: LLM_ADAPTER = mock (ค่าตั้งต้น) หรือ http (ตัวจริง ปิดไว้จนกว่าจะตั้ง URL กุญแจ และรุ่นโมเดล)"""
+    from app.integrations import choice
+    if choice("llm") == "http":
+        from app.integrations.http_llm import HttpLLM
+        return HttpLLM()
+    return MockLLM()
+
+
+_llm: LLM | None = None
 
 
 def get_llm() -> LLM:
+    global _llm
+    if _llm is None:
+        _llm = build_from_config()
     return _llm
 
 

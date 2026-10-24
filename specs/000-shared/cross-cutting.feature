@@ -1,7 +1,8 @@
-# cross-cutting.feature v1.1 | AC-00-01 ถึง AC-00-11 | ข้อกำหนดข้ามทุก feature ใน specs/000-shared/constraints.md ส่วน 6
+# cross-cutting.feature v1.2 | AC-00-01 ถึง AC-00-16 | ข้อกำหนดข้ามทุก feature ใน specs/000-shared/constraints.md ส่วน 6
 # เข้า Baseline B3 ตาม CR-07 (24 ต.ค. 2569, EV-045) เลข 00 = ไม่ใช่ของ use case ใด ถ้าลบ feature ใดทิ้ง AC เหล่านี้ยังต้องอยู่
 # AC ของข้อในส่วน 6 ที่ผูกกับ feature เดียว อยู่ใน .feature ของ feature นั้น (เช่น AC-07-14 ของ REQ-SEC-011, AC-08-10 ของ MU-01)
 # v1.1 CR-13 (23 พ.ย. 2569, EV-051): เพิ่ม AC-00-09 ถึง AC-00-11 (REQ-OP-008, Q-67) เข้า Baseline B6 AC เดิมไม่เปลี่ยนข้อความ
+# v1.2 CR-18 (10 ธ.ค. 2569, EV-053): เพิ่ม AC-00-12 ถึง AC-00-16 (REQ-IF-012 REQ-OP-009 REQ-SEC-015 REQ-QA-010 บรรทัดที่ 5 และ GAP-39) เข้า Baseline B7 AC เดิมไม่เปลี่ยนข้อความ
 # ภาษา: ไทย ยกเว้นคำสำคัญของ Gherkin และ ID
 
 Feature: ข้อกำหนดข้ามทุก feature ของบ้านพร้อม R1 (ปฏิบัติการ ความปลอดภัย)
@@ -92,3 +93,53 @@ Feature: ข้อกำหนดข้ามทุก feature ของบ้�
     When ทั้งสอง process ส่งยอดของนาทีที่จบแล้ว
     Then ยอดรวมของนาทีนั้นคือ 4 คำขอ ล้มเหลว 1 เวลาตอบสูงสุดเป็นค่าสูงสุดของทั้งสอง
     And ยอดของนาทีปัจจุบันที่ยังไม่ส่งของ process ที่ตอบรวมอยู่ด้วย
+
+  @AC-00-12 @REQ-IF-012 @REQ-OP-009
+  Scenario: AC-00-12 ค่าตั้งต้นเป็นตัวจำลอง เลือกตัวจริงที่ตั้งค่าไม่ครบ ระบบไม่พร้อม
+    Given ไม่ได้ตั้งค่าตัวแปรของระบบภายนอกใดเลย
+    When Ops เรียก GET /ops/integrations
+    Then ได้ 5 แถว payment IF-01, sms IF-02, line IF-02, map IF-03, llm IF-05 ทุกแถวเป็นตัวจำลองและตั้งค่าครบ
+    And GET /ready ตอบ 200
+    When ตั้ง PAYMENT_ADAPTER และ MAP_ADAPTER เป็น "http" แต่ยังไม่ตั้ง URL และกุญแจ
+    Then GET /ready ตอบ 503 และ integrations_not_configured คือ ["payment", "map"]
+    When ตั้ง URL และกุญแจของทั้งสองระบบ
+    Then GET /ready ตอบ 200 และแถว payment ไม่ใช่ตัวจำลอง ไม่มีค่าที่ขาด
+    And คำตอบของ GET /ops/integrations ไม่มีค่าของกุญแจ
+
+  @AC-00-13 @REQ-IF-012 @REQ-QA-010
+  Scenario: AC-00-13 ตัวจริงเรียกตามสัญญา interface โดยไม่ใช้เครือข่ายใน test
+    Given ตัวจริงของทุกระบบต่อกับ transport จำลองที่บันทึกคำขอ
+    When ตัดมัดจำ reference "BP-1-a" 350 บาท แล้วคืนเงิน
+    Then คำขอคือ POST /v1/payments/authorize และ POST /v1/payments/BP-1-a/refunds
+    And Idempotency-Key คือ "BP-1-a" และ "BP-1-a-refund"
+    When ส่ง SMS ส่ง LINE หาพิกัด และถาม LLM
+    Then คำขอตรงกับสัญญาใน docs/srs/models.md ส่วน 9 และข้อความถึง LLM ไม่มีเบอร์โทร
+    When ระบบภายนอกไม่ตอบภายในเวลา
+    Then ได้ GatewayTimeout NotifierTimeout หรือ MapTimeout ชนิดเดียวกับของตัวจำลอง
+    And ตัวจริงที่ยังไม่ตั้งค่าไม่เรียกเครือข่าย ได้ AdapterNotConfigured
+    When บริการ LLM ไม่ตอบระหว่างที่ลูกค้าถามสถานะงาน
+    Then ผู้ช่วยตอบด้วยคำตอบสำรองจากโค้ด ไม่ตอบ 500 และ log มีเหตุการณ์ "llm_error" (GAP-50)
+
+  @AC-00-14 @REQ-QA-010
+  Scenario: AC-00-14 แผนที่ไม่ตอบ การค้นหาใช้ระยะเส้นตรงและบันทึกเหตุ
+    Given บริการแผนที่ไม่ตอบ
+    When ลูกค้าค้นหาช่างประปาจากที่อยู่ของตัวเอง
+    Then ได้ 200 ผลเท่ากับการคิดระยะเส้นตรง ช่างที่อยู่ไกลเกิน 15 กม. ยังไม่อยู่ในผล
+    And log มีเหตุการณ์ "map_fallback" 1 บรรทัด
+
+  @AC-00-15 @REQ-SEC-015
+  Scenario: AC-00-15 กุญแจแยกบทบาทใช้ได้เฉพาะงานของบทบาทนั้น
+    Given ตั้งกุญแจของ call center และของ Finance คนละค่า
+    When call center อ่านงาน และปิดผู้ช่วยด้วยกุญแจของตัวเอง
+    Then อ่านได้ 200 และผู้ช่วยปิด
+    And กุญแจของ Ops และของ Finance เปิดผู้ช่วยไม่ได้ ตอบ 403
+    And กุญแจของ call center ดูรายการคืนเงินของ Finance ไม่ได้ ตอบ 403
+    And กุญแจของ Finance อ่านงานของลูกค้าไม่ได้ ตอบ 401
+    When ไม่ได้ตั้งกุญแจของ call center
+    Then ส่งกุญแจว่างได้ 403
+
+  @AC-00-16 @REQ-OP-005
+  Scenario: AC-00-16 ตัวนับนับการค้นหาที่เข้าสู่ระบบแล้วและแยกผลว่าง
+    Given ล้างตัวนับ
+    When ลูกค้าค้นหาช่างประปา 3 ครั้ง ค้นหาโดยไม่เข้าสู่ระบบ 1 ครั้ง และค้นหาช่างแอร์ที่ไม่มี 1 ครั้ง
+    Then ตัวนับของ GET /technicians มี 5 คำขอ และผลว่าง 1 คำขอ

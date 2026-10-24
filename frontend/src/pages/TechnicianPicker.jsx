@@ -1,3 +1,4 @@
+// CR-15 (UC-11 REQ-FN-069): คะแนนเฉลี่ยมาจากระบบ แสดงประกอบเท่านั้น ลำดับช่างตามที่ระบบส่งมา (ไม่เรียงตามคะแนน)
 // หน้าเลือกช่าง (UC-07 ขั้น 1 ถึง 3) รองรับ REQ-FN-008 และ REQ-FN-041 ตามแบบ UI-07-01 (CR-03)
 // ที่อยู่ให้บริการ: ยังรอ Q-29 จึงใช้ที่อยู่หลักที่ส่งเข้ามา (addressId) และยังไม่แสดงบนหน้าจอ
 // CR-11 (Q-29 ปิดใน EV-051): ลูกค้าที่มีหลายที่อยู่เลือกที่อยู่บนหน้านี้ (รายการ addresses มาจาก GET /me) ไม่ส่ง addresses มา = ใช้ addressId
@@ -118,6 +119,11 @@ export default function TechnicianPicker({ api, customerId, addressId: defaultAd
         {technicians?.map((t) => (
           <li key={t.technician_id} className="rounded-lg border border-slate-200 p-3">
             <p className="font-medium text-slate-800">ช่าง {t.name}</p>
+            {t.rating && (
+              <p className="text-xs text-slate-600" data-testid={`rating-${t.technician_id}`}>
+                {t.rating.average != null ? `คะแนนเฉลี่ย ${t.rating.average.toFixed(1)} จาก 5 (${t.rating.count} คะแนน)` : 'ยังมีคะแนนไม่พอแสดงค่าเฉลี่ย'}
+              </p>
+            )}
             <div className="mt-2 flex flex-wrap gap-2">
               {t.slots.map((s) => (
                 <button key={s.slot_id} type="button" onClick={() => pick(t, s)}

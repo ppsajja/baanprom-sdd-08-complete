@@ -48,8 +48,11 @@ def _conv(db, conversation_id: int, customer_id: int) -> AssistantConversation:
 @router.get("/assistant/status")
 def status(db: Session = Depends(get_db)):
     # REQ-AI-022: หน้าจอถามก่อนเปิดแชต ถ้าปิดอยู่ แสดงข้อความและปุ่มโทร
-    return {"enabled": service.is_enabled(db), "message": None if service.is_enabled(db) else service.MSG_DISABLED,
-            "call_center_tel": config.call_center_tel()}
+    enabled = service.is_enabled(db)
+    message = None if enabled else (service.MSG_DISABLED if service.model_accepted() else service.MSG_MODEL_NOT_ACCEPTED)
+    # CR-19 REQ-AI-023: บอกรุ่นโมเดลที่ใช้อยู่และรุ่นที่ผ่าน eval ให้คนเวรเห็นว่าทำไมปิด
+    return {"enabled": enabled, "message": message, "call_center_tel": config.call_center_tel(),
+            "model_version": service.get_llm().model_version, "accepted_model": config.assistant_accepted_model()}
 
 
 @router.post("/assistant/conversations")

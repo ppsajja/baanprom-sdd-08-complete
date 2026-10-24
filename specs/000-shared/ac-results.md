@@ -103,3 +103,25 @@ AC-00-01 ถึง AC-00-08 ไม่เปลี่ยน รันซ้ำท
 | เดินซ้อม scenario R1 ผ่าน API พร้อม token | ทุก REQ ของ R1 | backend/uat_replay.py บน PostgreSQL 2 process | 13 จาก 13 | docs/acceptance/uat-dryrun-r2-auth.txt |
 
 สรุปจำนวน: หลังบ้าน 139 passed (Python 3.11 และ 3.12) หน้าจอ 63 passed (32 ไฟล์) eval 20 จาก 20
+
+## รอบ R2 ส่วน B (B7) รันจริงจาก export สะอาด test-run.txt
+
+| AC | REQ | test | ผล | หมายเหตุ |
+|---|---|---|---|---|
+| AC-00-12 | REQ-IF-012, REQ-OP-009 | test_AC_00_12_adapters_switch_by_config | ผ่าน | |
+| AC-00-13 | REQ-IF-012, REQ-QA-010 | test_AC_00_13_real_adapters_follow_contract_without_network, test_AC_00_13_llm_down_assistant_uses_code_fallback | ผ่าน | บรรทัดสุดท้ายเพิ่มจาก GAP-50 |
+| AC-00-14 | REQ-QA-010 | test_AC_00_14_map_down_search_uses_straight_line | ผ่าน | |
+| AC-00-15 | REQ-SEC-015 | test_AC_00_15_role_keys | ผ่าน | ปิด GAP-32 |
+| AC-00-16 | REQ-OP-005 | test_AC_00_16_metrics_count_real_searches | ผ่าน | ปิด GAP-39 |
+| AC ของ 008 ถึง 011 | | ac-results.md ของแต่ละ feature | ผ่านทั้งหมด | 31 ข้อ |
+| AC-02-12 ถึง 14, AC-14-17 ถึง 19 | | ac-results.md ของ 006 และ 005 | ผ่าน | |
+| เดินซ้อม scenario R1 และ R2 ผ่าน API | ทุก REQ | uat_replay.py uat_replay_r2.py บน PostgreSQL 2 process | 22 จาก 22 | docs/acceptance/uat-dryrun-r2-full.txt |
+
+| | B6 (8 ธ.ค.) | B7 (10 ธ.ค. รับครบ 28 ธ.ค.) |
+|---|---|---|
+| AC ในสเปก | 104 | 146 |
+| test หลังบ้าน | 139 passed | 188 passed (Python 3.11 และ 3.12) |
+| test หน้าจอ | 63 passed (32 ไฟล์) | 78 passed (39 ไฟล์) |
+| eval | 20 จาก 20 | 21 จาก 21 ชุดลับ 50 จาก 50 |
+| test เดิมที่เปลี่ยน | ตามตาราง CR-11 CR-13 | 1 บรรทัด (CR-19) |
+| ข้อบกพร่องค้าง | 0 | 0 (กลาง 2 ที่เป็นเงื่อนไขก่อนเปิดใช้ F-21 F-22) |

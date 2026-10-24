@@ -57,7 +57,7 @@
      แก้ตาม CR-11 (เลือกที่อยู่ Q-29) และ CR-08 (ช่างที่เคยใช้ เลขโทรเมื่อไม่มีช่างว่าง Q-28) ทบทวนกับ SH-01 ใน EV-051
      ข้อมูลทุกตัวเป็นตัวอย่าง ดูว่าอะไร "ต้องตรง" ได้ที่ส่วน 12 หน้าจอ (UI) ใน spec.md
      data-req บอกว่าส่วนนั้นรองรับ requirement ข้อไหน กล่องเส้นประคือเรื่องที่ยังเป็น Q-xx ห้ามสร้าง -->
-<p class="note">MOCKUP UI-07-01 เลือกช่างและช่วงเวลา (UC-07 ขั้น 1 ถึง 3) | รองรับ REQ-FN-008, REQ-FN-041, REQ-FN-058 (ที่อยู่), REQ-FN-064, REQ-FN-065 | 4 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง</p>
+<p class="note">MOCKUP UI-07-01 เลือกช่างและช่วงเวลา (UC-07 ขั้น 1 ถึง 3) | รองรับ REQ-FN-008, REQ-FN-041, REQ-FN-058 (ที่อยู่), REQ-FN-064, REQ-FN-065, REQ-FN-069 (CR-15) | 5 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง | รุ่น R2 ส่วน B (CR-18 ปิด GAP-26) เพิ่มสถานะ 5</p>
 <div class="row">
   <section class="state">
     <h2>สถานะปกติ: มีช่างว่าง (AC-07-02)</h2>
@@ -73,10 +73,10 @@
       <label>ช่างที่เคยใช้</label>
       <div class="chips" data-req="REQ-FN-064"><span class="chip">จองช่าง ประสิทธิ์ อีกครั้ง</span></div>
       <span class="btn search" data-req="REQ-FN-008">ค้นหาช่างที่ว่างใน 7 วัน</span>
-      <div class="tech" data-req="REQ-FN-008"><b>ช่าง ประสิทธิ์</b>
+      <div class="tech" data-req="REQ-FN-008"><b>ช่าง ประสิทธิ์</b><div class="sub" data-req="REQ-FN-069">คะแนนเฉลี่ย 4.6 จาก 5 (12 คะแนน)</div>
         <div class="slots" data-req="REQ-FN-041"><span class="slot">12 ต.ค. 11:00</span><span class="slot">12 ต.ค. 14:00</span><span class="slot">12 ต.ค. 16:00</span><span class="slot">13 ต.ค. 14:00</span></div>
       </div>
-      <div class="tech" data-req="REQ-FN-008"><b>ช่าง วิชัย</b>
+      <div class="tech" data-req="REQ-FN-008"><b>ช่าง วิชัย</b><div class="sub" data-req="REQ-FN-069">ยังมีคะแนนไม่พอแสดงค่าเฉลี่ย</div>
         <div class="slots" data-req="REQ-FN-041"><span class="slot">12 ต.ค. 09:00</span><span class="slot">14 ต.ค. 13:00</span></div>
       </div>
       <p class="muted">แตะช่วงเวลาเพื่อเลือก ระบบจะล็อกช่วงเวลานั้นไว้ให้ระหว่างที่คุณยืนยัน</p>
@@ -128,6 +128,20 @@
       <div class="chips" data-req="REQ-FN-064"><span class="chip on">จองช่าง ประสิทธิ์ อีกครั้ง</span></div>
       <div class="alert amber" data-req="REQ-FN-064">ช่าง ประสิทธิ์ ยังไม่มีช่วงเวลาว่างใน 7 วันข้างหน้า กรุณาค้นหาช่างคนอื่น</div>
       <span class="btn search" data-req="REQ-FN-008">ค้นหาช่างที่ว่างใน 7 วัน</span>
+    </div>
+  </section>
+  <section class="state">
+    <h2>สถานะ 5: ถือล็อกช่วงอื่นอยู่ (AC-07-14, CR-07)</h2>
+    <div class="phone">
+      <div class="brand">บ้านพร้อม</div>
+      <div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
+      <div class="steps"><span class="on">1 เลือกช่าง</span><span class="">2 ยืนยัน</span><span class="">3 ผลการจอง</span></div>
+      <h3>เลือกประเภทงานและช่างที่ว่าง</h3>
+      <div class="alert amber" data-req="REQ-SEC-011">คุณล็อกช่วงเวลาอื่นไว้อยู่ กรุณายืนยันช่วงนั้นหรือรอให้หมดอายุก่อน</div>
+      <div class="tech" data-req="REQ-FN-008"><b>ช่าง ประสิทธิ์</b>
+        <div class="slots" data-req="REQ-FN-041"><span class="slot">12 ต.ค. 11:00</span><span class="slot">12 ต.ค. 16:00</span></div>
+      </div>
+      <p class="muted">ข้อความมาจากระบบ หน้าจอไม่ไปหน้ายืนยัน</p>
     </div>
   </section>
 </div>

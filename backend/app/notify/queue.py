@@ -167,7 +167,11 @@ class NotificationQueue:
                 row.attempts += 1
                 row.last_attempt_at = now
                 try:
-                    notifier.send(self._to_message(row), timeout_seconds=config.NOTIFY_TIMEOUT_SECONDS)
+                    # CR-17: ตัวส่งที่เลือกช่องทาง (ChannelRouter) บันทึกผลในธุรกรรมเดียวกันกับคิว
+                    if getattr(notifier, "wants_db", False):
+                        notifier.send(self._to_message(row), timeout_seconds=config.NOTIFY_TIMEOUT_SECONDS, db=s)
+                    else:
+                        notifier.send(self._to_message(row), timeout_seconds=config.NOTIFY_TIMEOUT_SECONDS)
                 except NotifierTimeout:
                     if row.attempts >= config.NOTIFY_MAX_ATTEMPTS:
                         row.gave_up = True  # คนเวรเห็นจากจำนวน gave_up ใน GET /notifications/queue (คู่มือเหตุการณ์ที่ 4)
@@ -182,10 +186,16 @@ class NotificationQueue:
 
 queue = NotificationQueue()
 
-_notifier: Notifier = FakeNotifier()
+# CR-17 (UC-10): ตัวส่งของระบบคือ ChannelRouter (SMS หรือ LINE ตามที่ผู้รับเลือก) สร้างตอนเรียกครั้งแรกจากค่าตั้ง
+# test ที่ต้องการดูข้อความเองยังสลับเป็น FakeNotifier ได้ด้วย set_notifier เหมือนเดิม
+_notifier: Notifier | None = None
 
 
 def get_notifier() -> Notifier:
+    global _notifier
+    if _notifier is None:
+        from app.notify.channels import build_from_config
+        _notifier = build_from_config()
     return _notifier
 
 

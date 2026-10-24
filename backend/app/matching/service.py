@@ -223,15 +223,19 @@ def decline_substitute(db, job: Job, now: datetime, gateway):
     return cancel_job(db, job, "customer", now, gateway, substitute_declined=True)
 
 
-def customer_job_view(db, job: Job) -> dict:
-    """มุมมองลูกค้าต่องานของตัวเอง (UI-02-03 งานของฉัน) ไม่มีข้อมูลส่วนบุคคลของช่างนอกจากชื่อ"""
+def customer_job_view(db, job: Job, now: datetime | None = None) -> dict:
+    """มุมมองลูกค้าต่องานของตัวเอง (UI-02-03 งานของฉัน) ไม่มีข้อมูลส่วนบุคคลของช่างนอกจากชื่อ
+    CR-15 (UC-11): can_rate และ my_rating บอกหน้าจอว่าให้คะแนนได้ไหม (BR-11) หน้าจอไม่ตัดสินเอง"""
+    from app.rating.service import can_rate, rating_of
     tech = db.get(Technician, job.technician_id)
     a = current_assignment(db, job)
     substitute = bool(a and a.via_rematch)
+    mine = rating_of(db, job.id)
     return {"job_id": job.id, "status": job.status, "category": job.category,
             "scheduled_start": job.scheduled_start.isoformat(),
             "technician_name": tech.name if tech and job.status != "rematching" else None,
-            "substitute": substitute, "can_decline_substitute": substitute and job.status == "confirmed"}
+            "substitute": substitute, "can_decline_substitute": substitute and job.status == "confirmed",
+            "can_rate": can_rate(db, job, now or datetime.now()), "my_rating": mine.stars if mine else None}
 
 
 # ---- CR-08 ช่างคนเดิม (REQ-FN-064, BR-08) ----

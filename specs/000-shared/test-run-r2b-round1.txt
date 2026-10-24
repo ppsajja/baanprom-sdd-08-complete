@@ -1,0 +1,52 @@
+# รอบแรกหลังแก้โค้ดของ R2 ส่วน B (CR-14 ถึง CR-19) ก่อนแก้ test เดิม รันจริง Python 3.12 2026-10-24 15:35 คำสั่ง: cd backend && pytest -q
+...........................F............................................ [ 51%]
+...................................................................      [100%]
+=================================== FAILURES ===================================
+_________________ test_AC_14_11_action_log_complete_and_no_pii _________________
+
+client = <starlette.testclient.TestClient object at 0x7f38492ca420>
+db = <sqlalchemy.orm.session.Session object at 0x7f384977d070>
+seed = {'somchai': <app.db.models.Customer object at 0x7f38490868d0>, 'other': <app.db.models.Customer object at 0x7f3849085b...s.ServiceAddress object at 0x7f3849085be0>, 'addr_other': <app.db.models.ServiceAddress object at 0x7f384909dfa0>, ...}
+caplog = <_pytest.logging.LogCaptureFixture object at 0x7f3849085a00>
+
+    def test_AC_14_11_action_log_complete_and_no_pii(client, db, seed, caplog):
+        caplog.set_level(logging.INFO)
+        job, conv, out = _propose(client, db, seed, "ขอเลื่อนเป็น 6 ต.ค. 14:00 ติดต่อ 081-234-5678 ได้")
+        r = client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/confirm{q()}",
+                        json={"customer_id": seed["somchai"].id}, headers=H("customer", seed["somchai"].id)).json()
+        assert r["ok"] is True
+        a = db.scalars(select(AssistantAction)).one()
+        assert a.customer_id == seed["somchai"].id and "[phone]" in a.masked_text and "081-234-5678" not in a.masked_text
+        assert "เลื่อนงาน" in a.interpretation and a.tool == "reschedule_job" and '"new_slot_id"' in a.args
+>       assert a.confirmed_at == NOW and a.result == "rescheduled" and a.prompt_version == "P-1.1" and a.model_version == "mock-1.0"
+E       AssertionError: assert (datetime.datetime(2026, 10, 4, 10, 0) == datetime.datetime(2026, 10, 4, 10, 0) and 'rescheduled' == 'rescheduled'
+E        +  where datetime.datetime(2026, 10, 4, 10, 0) = <app.db.models.AssistantAction object at 0x7f38491053a0>.confirmed_at
+E         
+E           rescheduled and 'P-1.1' == 'P-1.1'
+E         
+E           P-1.1 and 'mock-1.1' == 'mock-1.0'
+E         
+E         - mock-1.0
+E         ?        ^
+E         + mock-1.1
+E         ?        ^)
+
+tests/test_assistant.py:221: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"event": "session_issued", "actor_id": 1, "dropped": ["role"]}
+{"event": "booking_created", "job_id": 1, "customer_id": 1}
+{"event": "session_issued", "actor_id": 1, "dropped": ["role"]}
+{"event": "session_issued", "actor_id": 1, "dropped": ["role"]}
+{"event": "assistant_turn", "conversation_id": 1, "customer_id": 1, "turn_id": 1, "intent": "reschedule", "result": "proposal", "guard": "not_checked", "prompt_version": "P-1.1", "model_version": "none"}
+{"event": "session_issued", "actor_id": 1, "dropped": ["role"]}
+{"event": "assistant_action", "conversation_id": 1, "customer_id": 1, "proposal_id": 1, "tool": "reschedule_job", "job_id": 1, "result": "rescheduled"}
+------------------------------ Captured log call -------------------------------
+=============================== warnings summary ===============================
+../../../work/venv312/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_assistant.py::test_AC_14_11_action_log_complete_and_no_pii
+1 failed, 138 passed, 1 warning in 24.84s

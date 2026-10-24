@@ -17,7 +17,7 @@ from fastapi import Depends, FastAPI, Request
 
 from app import config
 from app.db.session import engine, SessionLocal
-from app.db.migrations.m004_r2 import upgrade
+from app.db.migrations.m005_r2b import upgrade
 from app.technicians.router import router as technicians_router
 from app.booking.router import router as booking_router
 from app.jobstatus.router import router as jobstatus_router
@@ -31,6 +31,11 @@ from app.ops import scheduler, lease
 from app.auth.router import router as auth_router, ops_router as auth_ops_router
 from app.matching.router import router as matching_router
 from app.notify.queue import queue
+from app.schedule.router import router as schedule_router
+from app.rating.router import router as rating_router
+from app.reconciliation.router import router as reconciliation_router
+from app.notify.router import router as notify_router
+from app.callcenter.router import router as callcenter_router
 
 
 def minute_job(holder: str, now: datetime) -> bool:
@@ -60,7 +65,7 @@ async def _every_minute() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    upgrade(engine)  # T-01 สร้างตาราง m002 ของ CR-07 (T-17 ของ 002) m003 ของ CR-09 (T-01 ของ 005) และ m004 ของ R2 (T-01 ของ 006)
+    upgrade(engine)  # T-01 สร้างตาราง m002 ของ CR-07 (T-17 ของ 002) m003 ของ CR-09 (T-01 ของ 005) m004 ของ R2 (T-01 ของ 006) m005 ของ R2 ส่วน B
     task = None if config.app_env() == "test" else asyncio.create_task(_every_minute())
     yield
     if task:
@@ -87,8 +92,9 @@ def configure_logging() -> None:
 def create_app() -> FastAPI:
     configure_logging()
     production = config.app_env() == "production"
-    app = FastAPI(title="บ้านพร้อม R2 - UC-01 UC-02 เข้าสู่ระบบ, UC-07 จองงาน, UC-09 สถานะงาน, UC-08 ยกเลิกและคืนเงิน, "
-                        "UC-12 UC-05 รับงานและจับคู่ช่างใหม่, UC-14 ผู้ช่วย", lifespan=lifespan,
+    app = FastAPI(title="บ้านพร้อม R2 - UC-01 UC-02 เข้าสู่ระบบ, UC-04 ตารางเวลา, UC-07 จองงาน, UC-09 สถานะงาน, "
+                        "UC-08 ยกเลิกและคืนเงิน, UC-10 แจ้งเตือน, UC-11 คะแนน, UC-12 UC-05 รับงานและจับคู่ช่างใหม่, "
+                        "UC-13 กระทบยอด, UC-14 ผู้ช่วย", lifespan=lifespan,
                   # รองรับ REQ-SEC-012 (AC-00-06): หน้าเอกสารที่ FastAPI เปิดให้เอง ปิดในระบบจริง
                   docs_url=None if production else "/docs",
                   redoc_url=None if production else "/redoc",
@@ -116,6 +122,11 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)        # CR-11 (specs/006-identity) UC-01 UC-02
     app.include_router(auth_ops_router)    # CR-11 REQ-FN-060 ออกบัญชีช่าง (X-Ops-Token)
     app.include_router(matching_router)    # CR-12 (specs/007-accept-rematch) UC-12 UC-05 และ CR-08 ช่างคนเดิม
+    app.include_router(schedule_router)    # CR-14 (specs/008-schedule) UC-04
+    app.include_router(rating_router)      # CR-15 (specs/009-rating) UC-11
+    app.include_router(reconciliation_router)  # CR-16 (specs/010-reconciliation) UC-13 (X-Finance-Token)
+    app.include_router(notify_router)      # CR-17 (specs/011-notifications) UC-10
+    app.include_router(callcenter_router)  # CR-18 เครื่องมือของ call center (X-Call-Center-Token GAP-31 GAP-32)
 
     @app.get("/notifications/queue", dependencies=[Depends(require_ops)])
     def notifications():

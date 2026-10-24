@@ -1,9 +1,7 @@
 // หน้าลงทะเบียนลูกค้าใหม่ (UC-02, CR-11) ตามแบบ UI-02-02 รองรับ REQ-FN-058, REQ-PRV-011
-// ตำแหน่งที่อยู่: บริการแผนที่ (IF-03) ยังเป็นของจำลอง หน้าจอส่งพิกัดกลางพื้นที่ให้บริการไปก่อน (GAP-40) ห้ามเดาพิกัดเอง
+// CR-18 (GAP-40 ปิด): หน้าจอไม่ส่งพิกัดแล้ว หลังบ้านหาพิกัดจากข้อความที่อยู่ผ่านบริการแผนที่ (IF-03)
+// หาไม่พบ ระบบตอบข้อความให้ใส่ชื่อเขตหรืออำเภอ หน้าจอแสดงข้อความนั้นตรง ๆ
 import { useState } from 'react'
-
-// พิกัดกลางพื้นที่ให้บริการทดสอบ (ค่าเดียวกับ uat_seed.py) ใช้จนกว่าแผนที่จริง (IF-03) มาแทน
-export const DEFAULT_PIN = { lat: 13.74, lng: 100.53 }
 
 export default function Register({ api, challengeId, phone, onRegistered, onBack }) {
   const [name, setName] = useState('')
@@ -15,7 +13,7 @@ export default function Register({ api, challengeId, phone, onRegistered, onBack
     e?.preventDefault()
     setError('')
     setBusy(true)
-    const { status, body } = await api.register({ challengeId, name, addressText, ...DEFAULT_PIN })
+    const { status, body } = await api.register({ challengeId, name, addressText })
     setBusy(false)
     if (status === 201) return onRegistered(body)
     setError(body.message ?? 'กรุณากรอกชื่อและที่อยู่ให้ครบ')
@@ -36,6 +34,7 @@ export default function Register({ api, challengeId, phone, onRegistered, onBack
           <textarea value={addressText} onChange={(e) => setAddressText(e.target.value)} rows={2}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900" />
         </label>
+        <p className="text-xs text-slate-500">ใส่ชื่อเขตหรืออำเภอด้วย ระบบใช้หาตำแหน่งบนแผนที่</p>
         <p className="text-xs text-slate-500">พิกัดใช้คำนวณระยะทางถึงช่างเท่านั้น ไม่แสดงให้ใครเห็น</p>
         <button type="submit" disabled={busy || !name.trim() || !addressText.trim()}
           className="w-full rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-300">

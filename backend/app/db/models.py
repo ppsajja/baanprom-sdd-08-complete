@@ -347,3 +347,101 @@ class MetricMinute(Base):
     empty_results: Mapped[int] = mapped_column(Integer, default=0)
     total_ms: Mapped[float] = mapped_column(Float, default=0.0)
     max_ms: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+# ---- R2 ส่วน B (migration m005) ตารางใหม่ทั้งหมด ไม่แก้ตารางเดิม ----
+
+# CR-14 (UC-04, specs/008-schedule): ช่วงเวลาที่ช่างปิดเอง หรือปิดเพราะวันหยุด ไม่ปรากฏในการค้นหา การจอง และการจับคู่ (BR-10)
+SLOT_CLOSED = "closed"
+
+
+class TechnicianDayOff(Base):
+    """CR-14 REQ-FN-067 วันหยุดของช่าง 1 แถวต่อ 1 วัน ช่วงเวลาที่ "ว่าง" ของวันนั้นเป็น closed ทั้งหมด"""
+    __tablename__ = "technician_days_off"
+    __table_args__ = (UniqueConstraint("technician_id", "day", name="uq_days_off_tech_day"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    technician_id: Mapped[int] = mapped_column(Integer, index=True)
+    day: Mapped[datetime] = mapped_column(DateTime)       # เที่ยงคืนของวันนั้น
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    closed_slot_ids: Mapped[str] = mapped_column(String(2000), default="[]")  # JSON ช่วงที่ปิดเพราะวันหยุดนี้ (BR-10 ข้อ 8)
+
+
+class Rating(Base):
+    """CR-15 REQ-FN-068 (UC-11) คะแนนของลูกค้าต่องานที่เสร็จสิ้น 1 แถวต่อ 1 งาน (BR-11 ข้อ 3)
+    comment เก็บหลังปิดบังเบอร์ อีเมล เลขบัตร (REQ-PRV-012) counted = False เมื่อเข้า BR-11 ข้อ 5 (เบอร์ของลูกค้าตรงกับช่าง)"""
+    __tablename__ = "ratings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(Integer, unique=True)
+    customer_id: Mapped[int] = mapped_column(Integer, index=True)
+    technician_id: Mapped[int] = mapped_column(Integer, index=True)
+    stars: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[str] = mapped_column(String(300), default="")
+    counted: Mapped[bool] = mapped_column(Boolean, default=True)
+    at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ReconciliationRun(Base):
+    """CR-16 REQ-FN-070 (UC-13) การกระทบยอด 1 ครั้งต่อรายงาน 1 ไฟล์ของ gateway (IF-01) report_sha256 กันการนำเข้าซ้ำโดยไม่รู้ตัว"""
+    __tablename__ = "reconciliation_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    report_date: Mapped[datetime] = mapped_column(DateTime)
+    report_sha256: Mapped[str] = mapped_column(String(64))
+    rows_in_report: Mapped[int] = mapped_column(Integer)
+    matched: Mapped[int] = mapped_column(Integer, default=0)
+    differences: Mapped[int] = mapped_column(Integer, default=0)
+    at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ReconciliationItem(Base):
+    """CR-16 รายการต่าง 1 แถวต่อ 1 รายการ kind: missing_in_report / missing_in_system / amount_mismatch / status_mismatch
+    / refund_unknown_resolved / refund_unknown_still ไม่มีข้อมูลส่วนบุคคล (มีแค่เลขงาน reference ยอด)"""
+    __tablename__ = "reconciliation_items"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(Integer, index=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    entry_type: Mapped[str] = mapped_column(String(10))   # capture / refund
+    reference: Mapped[str] = mapped_column(String(50))
+    job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    system_amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    report_amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    system_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    report_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+
+class RefundResolution(Base):
+    """CR-16 REQ-FN-071 (Q-41): ผลคืนเงินที่เปลี่ยนจากรายงานของ gateway บันทึกเดิมไม่ถูกเขียนทับเงียบ ๆ"""
+    __tablename__ = "refund_resolutions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    refund_id: Mapped[int] = mapped_column(Integer, index=True)
+    run_id: Mapped[int] = mapped_column(Integer)
+    from_result: Mapped[str] = mapped_column(String(10))
+    to_result: Mapped[str] = mapped_column(String(10))
+    at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class NotificationPreference(Base):
+    """CR-17 REQ-FN-072 (UC-10) ช่องทางรับข้อความของลูกค้าหรือช่าง channel: sms (ค่าตั้งต้น) / line
+    line_user_id มาจากการเชื่อมบัญชี LINE (IF-02) เป็นข้อมูลส่วนบุคคล ลบเมื่อลูกค้าขอลบข้อมูล"""
+    __tablename__ = "notification_preferences"
+    __table_args__ = (UniqueConstraint("role", "subject_id", name="uq_notify_pref"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(20))
+    subject_id: Mapped[int] = mapped_column(Integer)
+    channel: Mapped[str] = mapped_column(String(10), default="sms")
+    line_user_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    link_code_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    link_code_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class NotificationDelivery(Base):
+    """CR-17 REQ-FN-073 ข้อความ 1 ข้อความส่งทางช่องทางไหน result: sent / failed / no_contact fallback = True เมื่อ LINE ไม่สำเร็จแล้วส่ง SMS แทน"""
+    __tablename__ = "notification_deliveries"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    to_role: Mapped[str] = mapped_column(String(20))
+    to_id: Mapped[int] = mapped_column(Integer)
+    channel: Mapped[str] = mapped_column(String(10))
+    result: Mapped[str] = mapped_column(String(20))
+    fallback: Mapped[bool] = mapped_column(Boolean, default=False)
+    at: Mapped[datetime] = mapped_column(DateTime)

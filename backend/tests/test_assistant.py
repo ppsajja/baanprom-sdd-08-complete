@@ -218,7 +218,7 @@ def test_AC_14_11_action_log_complete_and_no_pii(client, db, seed, caplog):
     a = db.scalars(select(AssistantAction)).one()
     assert a.customer_id == seed["somchai"].id and "[phone]" in a.masked_text and "081-234-5678" not in a.masked_text
     assert "เลื่อนงาน" in a.interpretation and a.tool == "reschedule_job" and '"new_slot_id"' in a.args
-    assert a.confirmed_at == NOW and a.result == "rescheduled" and a.prompt_version == "P-1.1" and a.model_version == "mock-1.0"
+    assert a.confirmed_at == NOW and a.result == "rescheduled" and a.prompt_version == "P-1.1" and a.model_version == MockLLM.model_version  # CR-19: เดิม "mock-1.0" รุ่นโมเดลเปลี่ยนเป็น mock-1.1
     assert "081-234-5678" not in caplog.text
     why = client.get(f"/ops/assistant/jobs/{job.id}/actions").json()
     assert why and why[0]["result"] == "rescheduled"

@@ -1,4 +1,34 @@
-# เอกสารส่งมอบ R1 บ้านพร้อม
+# เอกสารส่งมอบ R2 บ้านพร้อม (ระบบที่ส่งมอบครบตาม TOR ของ R2)
+
+ส่งมอบพร้อมการตรวจรับงวด 4 แบบมีเงื่อนไข (docs/acceptance/acceptance-record-r2.md 28 ธ.ค. 2569 สมมติ) รุ่นที่ส่งมอบคือ Baseline B7 (git tag b7)
+ผู้รับ: Ops lead (ระบบ การปฏิบัติการ ตัวเชื่อมระบบภายนอก) หัวหน้า call center (ผู้ช่วย เครื่องมือ call center) SH-06 (ช่าง ตารางเวลา) Finance (กระทบยอด) SH-05 (รายการตรวจของ LLM และ LINE)
+
+| เอกสาร | ไฟล์ | ผู้ใช้ |
+|---|---|---|
+| คู่มือผู้ใช้ ห้าบทบาท (ลูกค้า ช่าง call center Finance Ops) | docs/handover/user-guide.md ส่วน R2 | ผู้สอนในการอบรม |
+| คู่มือติดตั้ง (ตัวแปรของตัวเชื่อม กุญแจของบทบาท m005 webhook ของ LINE) | docs/handover/install-guide.md ส่วน R2 | Ops lead |
+| คู่มือรับมือเหตุ รุ่น 1.4 (เหตุการณ์ที่ 1 ถึง 10 บัญชี endpoint) | docs/srs/operations.md | คนเวร |
+| รายการของจำลองที่ต้องเปลี่ยนก่อนขึ้นระบบจริง และรายการตรวจของ LLM (Q-56) | docs/handover/mocks-and-limits.md ส่วน R2 | Ops lead Dev lead SH-05 |
+| เกณฑ์ก่อนเปิดใช้จริง hypercare ทดลองแบบเงาและนำร่อง ระยะรับประกัน | docs/handover/hypercare-and-golive.md ส่วน 3 | SH-01 Ops lead |
+| TOR และผลตรวจรับรายงวด | docs/contract/tor-r2.md, docs/acceptance/r2-milestone-1.md ถึง 4, acceptance-record-r2.md | คณะกรรมการ SH-01 |
+| สเปกทั้งระบบ | docs/srs/srs-index-r2.md, docs/srs/rtm-all.md, docs/srs/baseline.md (B7) | RE lead ทีมที่รับงานต่อ |
+
+## ตรวจว่าส่งมอบครบ R2 (บทเสริม หัวข้อ 6.3)
+
+| รายการ | สถานะ |
+|---|---|
+| ระบบรุ่นที่รับ และวิธีสร้างจากของที่ส่งมอบ | มี tag b7 คู่มือติดตั้งผ่าน OAT-1 ของ R2 |
+| test eval และผลรันล่าสุด | มี specs/000-shared/test-run.txt specs/005-ai-assistant/eval-results.md |
+| คู่มือผู้ใช้ | มี ห้าบทบาท ลองกับผู้ใช้จำลองใน UAT R2 ยังไม่ได้อบรมผู้ใช้จริง |
+| คู่มือรับมือเหตุ | มี รุ่น 1.4 เหตุการณ์ที่ 7 ถึง 9 เดินใน OAT-3 ของ R2 เหตุการณ์ที่ 10 ยังไม่ได้เดิน |
+| ข้อมูลตั้งต้น | ช่างเพิ่มตารางเอง (UC-04) บัญชีช่าง Ops ออกตาม install-guide |
+| ของจำลองและผู้รับผิดชอบเปลี่ยน | มี mocks-and-limits.md ส่วน R2 |
+| เกณฑ์ก่อนเปิดใช้และทางถอย | มี hypercare-and-golive.md |
+| ผู้รับงานต่อ | Ops lead (ระบบ) RE lead ของผู้ว่าจ้าง (requirement จากหลักฐานการใช้จริง) กลุ่ม X ในระยะรับประกัน |
+
+ส่วนด้านล่างคือเอกสารส่งมอบของ R1 คงไว้อ่านย้อนหลัง
+
+## เอกสารส่งมอบ R1 บ้านพร้อม (บันทึกเดิม)
 
 ส่งมอบพร้อมการลงนามรับ R1 รอบสอง (docs/acceptance/acceptance-record-r1.md 16 พ.ย. 2569) รุ่นที่ส่งมอบคือ Baseline B5 (docs/srs/baseline.md)
 ผู้รับ: Ops lead (ระบบและการปฏิบัติการ) หัวหน้า call center และ SH-06 (การใช้งาน) Finance (รายการเงินคืนที่ต้องตาม)

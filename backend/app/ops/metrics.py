@@ -2,8 +2,13 @@
 endpoint นับตามแม่แบบของ path (เช่น /jobs/{job_id}/status) ไม่ใช่ path จริง เพื่อไม่ให้เลขงานกลายเป็นแถวใหม่
 "ล้มเหลว" = คำตอบ 5xx (ฝั่งเราผิด) และ 402 (ชำระไม่สำเร็จ ซึ่งเป็นอาการแรกของเหตุการณ์ที่ 1 ในคู่มือ)
 คำตอบ 4xx อื่นเป็นความผิดของผู้ขอ ไม่นับเป็นล้มเหลว แต่ 403 ถูกนับแยกใน security_events (REQ-SEC-010)
-ตัวเก็บอยู่ในหน่วยความจำ (ทีมเลือกเอง เหมือน notify/queue.py) ระบบจริงส่งออกให้เครื่องมือเฝ้าดูผ่าน GET /metrics"""
+ตัวเก็บอยู่ในหน่วยความจำ (ทีมเลือกเอง เหมือน notify/queue.py) ระบบจริงส่งออกให้เครื่องมือเฝ้าดูผ่าน GET /metrics
+CR-13 (Q-67 ปิดใน EV-051, REQ-OP-008): เมื่อรันหลาย process แต่ละ process นับในหน่วยความจำของตัวเอง แล้วทุกนาที
+ส่งยอดของนาทีที่จบแล้วไปบวกในตาราง metric_minutes (flush_to_db) GET /metrics และการเตือนอ่านยอดรวม (combined)
+ยอดของนาทีปัจจุบันที่ยังไม่ส่ง หายได้เมื่อ process ดับ (Ops lead ยอมรับใน EV-051 ไม่เกิน 1 นาทีต่อ process)"""
 from collections import defaultdict
+
+from sqlalchemy import func
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -70,3 +75,59 @@ class Metrics:
 
 
 metrics = Metrics()
+
+
+def flush_to_db(db, m: Metrics, now: datetime) -> int:
+    """CR-13: ส่งยอดของนาทีที่จบแล้ว (ก่อนนาทีของ now) ไปบวกในตาราง แล้วลบออกจากหน่วยความจำ คืนจำนวนแถวที่ส่ง"""
+    from app.db.models import MetricMinute
+    current = minute_of(now)
+    done = [(k, b) for k, b in m.buckets.items() if k[1] < current]
+    if not done:
+        return 0
+    dialect = db.get_bind().dialect.name
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+    for (endpoint, minute), b in done:
+        stmt = insert(MetricMinute).values(endpoint=endpoint, minute=minute, requests=b.requests, failures=b.failures,
+                                           empty_results=b.empty_results, total_ms=b.total_ms, max_ms=b.max_ms)
+        t = MetricMinute.__table__.c
+        stmt = stmt.on_conflict_do_update(index_elements=["endpoint", "minute"], set_={
+            "requests": t.requests + b.requests, "failures": t.failures + b.failures,
+            "empty_results": t.empty_results + b.empty_results, "total_ms": t.total_ms + b.total_ms,
+            "max_ms": func.greatest(t.max_ms, b.max_ms) if dialect == "postgresql" else func.max(t.max_ms, b.max_ms)})
+        db.execute(stmt)
+    db.commit()
+    for k, _ in done:
+        m.buckets.pop(k, None)
+    return len(done)
+
+
+def combined(db, m: Metrics, since: datetime | None = None) -> Metrics:
+    """CR-13: ยอดรวมของทุก process = แถวในตาราง (นาทีที่จบแล้ว) บวกยอดที่ยังอยู่ในหน่วยความจำของ process นี้"""
+    from sqlalchemy import select, inspect
+    from app.db.models import MetricMinute
+    out = Metrics()
+    if inspect(db.get_bind()).has_table("metric_minutes"):
+        q = select(MetricMinute)
+        if since is not None:
+            q = q.where(MetricMinute.minute >= since)
+        for r in db.scalars(q).all():
+            out.buckets[(r.endpoint, r.minute)] = Bucket(endpoint=r.endpoint, minute=r.minute.isoformat(),
+                                                         requests=r.requests, failures=r.failures,
+                                                         empty_results=r.empty_results, total_ms=r.total_ms,
+                                                         max_ms=r.max_ms)
+    for k, b in m.buckets.items():
+        if since is not None and k[1] < since:
+            continue
+        cur = out.buckets.get(k)
+        if cur is None:
+            out.buckets[k] = Bucket(**asdict(b))
+            continue
+        cur.requests += b.requests
+        cur.failures += b.failures
+        cur.empty_results += b.empty_results
+        cur.total_ms += b.total_ms
+        cur.max_ms = max(cur.max_ms, b.max_ms)
+    return out

@@ -388,3 +388,34 @@ tasks v5: เพิ่ม T-32 และ T-33 จากข้อบกพร่�
 - ต้องทำหลัง: ไม่มี
 - เสร็จเมื่อ: test ใหม่ไม่ผ่านกับโค้ดก่อนแก้ แล้วผ่านหลังแก้ OAT-6 ผ่าน
 - สถานะ: เสร็จ
+
+tasks v6 (2569-11-23): เพิ่ม T-34 ถึง T-37 ตาม CR-08 และ CR-13 ด้วยข้อความสั่งในแชต (prompt-log.md #92) งานของ CR-11 และ CR-12 ที่แตะไฟล์ของ feature นี้อยู่ใน tasks.md ของ 006 และ 007
+
+### T-34 ช่างคนเดิม หลังบ้าน (CR-08, BR-08)
+- รองรับ: REQ-FN-064, BR-08, REQ-SEC-010
+- ตรวจด้วย: AC-07-20, AC-07-21, AC-07-22, AC-07-23
+- ไฟล์ที่แตะ: backend/app/matching/service.py (past_technicians, past_technician_slots), backend/app/matching/router.py, backend/app/config.py, backend/tests/test_booking_cr08.py (ใหม่)
+- แบบหน้าจอ: ไม่มี
+- ต้องทำหลัง: T-03 ของ 006 (ลูกค้ามาจาก token)
+- เสร็จเมื่อ: test_AC_07_20 ถึง 23 ผ่าน
+- สถานะ: เสร็จ
+
+### T-35 ช่างคนเดิมและเส้นทาง A1 หน้าจอ (CR-08)
+- รองรับ: REQ-FN-064, REQ-FN-065
+- ตรวจด้วย: AC-07-20.test.jsx (AC-07-20, 21, 24 และ AC-02-10) UI-07-01.test.jsx เดิมผ่านโดยไม่แก้
+- ไฟล์ที่แตะ: frontend/src/pages/TechnicianPicker.jsx, frontend/src/api/client.js, mockups/UI-07-01-pick-technician.html
+- แบบหน้าจอ: UI-07-01 (แก้ เพิ่มสถานะที่ 4)
+- สถานะ: เสร็จ
+
+### T-36 เส้นทาง A1 หลังบ้าน เลขโทร call center (CR-08 Q-28)
+- รองรับ: REQ-FN-065
+- ตรวจด้วย: AC-07-24
+- ไฟล์ที่แตะ: backend/app/technicians/router.py (GET /contact)
+- สถานะ: เสร็จ
+
+### T-37 คิวในฐานข้อมูล หลาย process และประสิทธิภาพของการค้นหา (CR-13)
+- รองรับ: REQ-OP-008, REQ-QA-003
+- ตรวจด้วย: AC-00-09, AC-00-10, AC-00-11, AC-07-08 (docs/acceptance/load-test-r2.md)
+- ไฟล์ที่แตะ: backend/app/notify/queue.py, ops/lease.py (ใหม่), ops/metrics.py, ops/scheduler.py, ops/router.py, ops/serve.py (ใหม่), ops/nodelay.py (ใหม่), main.py, db/session.py, db/migrations/m004_r2.py, technicians/service.py, booking/router.py (with_for_update), auth/deps.py, backend/load_test.py, backend/tests/test_cross_cutting_cr13.py (ใหม่) test เดิม test_job_status_cr07.py 1 บรรทัดตามตารางของ CR-13
+- เสร็จเมื่อ: test_AC_00_09 ถึง 11 ผ่าน ทดสอบโหลดบน PostgreSQL 2 process ไม่มีคำตอบ 5xx และบันทึกผลตรงตามที่วัดได้
+- สถานะ: เสร็จ (พบ GAP-41 GAP-42 ระหว่างทดสอบโหลด แก้แล้ว)

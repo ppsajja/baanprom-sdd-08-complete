@@ -29,8 +29,10 @@ def ready(db: Session = Depends(get_db)):
 
 
 @router.get("/metrics", dependencies=[Depends(require_ops)])
-def read_metrics():
-    return metrics.as_dicts()
+def read_metrics(db: Session = Depends(get_db)):
+    # CR-13 (REQ-OP-008): ยอดรวมทุก process (ตาราง metric_minutes) บวกนาทีปัจจุบันของ process ที่ตอบ
+    from app.ops.metrics import combined
+    return combined(db, metrics).as_dicts()
 
 
 @router.get("/ops/refunds/follow-up", dependencies=[Depends(require_ops)])

@@ -1,7 +1,9 @@
 """POST /slots/{id}/hold, GET /deposit-quote, POST /bookings, GET /jobs/{id}, GET /jobs/{id}/technician-view (plan.md ข้อ 4)
 CR-09: POST /jobs/{id}/reschedule (REQ-FN-056, BR-06) API เลื่อนนัดของลูกค้า ผู้ช่วยของ UC-14 ใช้ฟังก์ชันเดียวกัน
 CR-07: REQ-SEC-011 (409 hold_limit), REQ-QA-010 (202 payment_pending), REQ-SEC-010 (technician-view 403 และบันทึก)
-log ผ่าน log_event เท่านั้น (REQ-OP-005 บรรทัดที่ 3)"""
+log ผ่าน log_event เท่านั้น (REQ-OP-005 บรรทัดที่ 3)
+CR-11 (R2): ลูกค้าและช่างมาจาก token (app/auth/deps.py) customer_id และ technician_id ที่ส่งมาไม่ถูกใช้ (REQ-SEC-014)
+GET /jobs/{id} ตรวจสิทธิ์แล้ว (GAP-24 ปิด) ที่อยู่ให้บริการต้องเป็นของลูกค้าคนนี้"""
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,17 +18,19 @@ from app.payments.gateway import get_gateway
 from app.clock import get_now
 from app.privacy import get_logger, log_event
 from app.ops import audit
+from app.auth.deps import current_customer, current_technician, current_reader, Reader
+from app.auth.service import Actor
 
 router = APIRouter()
 log = get_logger(__name__)
 
 
 class HoldIn(BaseModel):
-    customer_id: int
+    customer_id: int | None = None  # CR-11: ไม่ใช้แล้ว ลูกค้ามาจาก token รับไว้เพื่อให้หน้าจอรุ่นเดิมไม่พัง
 
 
 class BookingIn(BaseModel):
-    customer_id: int
+    customer_id: int | None = None  # CR-11: ไม่ใช้แล้ว ลูกค้ามาจาก token
     slot_id: int
     address_id: int
     category: str
@@ -39,13 +43,14 @@ def job_out(job: Job) -> dict:
 
 
 @router.post("/slots/{slot_id}/hold")
-def hold(slot_id: int, body: HoldIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
-    # รองรับ REQ-FN-041
-    slot = db.get(TimeSlot, slot_id)
+def hold(slot_id: int, body: HoldIn | None = None, actor: Actor = Depends(current_customer),
+         db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+    # รองรับ REQ-FN-041 | CR-13: ล็อกแถวช่วงเวลา (SELECT FOR UPDATE บน PostgreSQL) สอง process ขอช่วงเดียวกันพร้อมกันได้ล็อกคนเดียว
+    slot = db.get(TimeSlot, slot_id, with_for_update=True)
     if not slot:
         raise HTTPException(404, "ไม่พบช่วงเวลา")
     try:
-        slot = service.hold_slot(db, slot, body.customer_id, now)
+        slot = service.hold_slot(db, slot, actor.subject_id, now)
     except service.SlotTaken as e:
         return JSONResponse({"reason": "slot_taken", "alternatives": e.alternatives}, status_code=409)
     except service.HoldLimitReached as e:
@@ -81,11 +86,16 @@ def deposit_quote(category: str):
 
 
 @router.post("/bookings", status_code=201)
-def create(body: BookingIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
-    # รองรับ REQ-FN-008, REQ-IF-001, REQ-IF-005
-    customer, slot, address = db.get(Customer, body.customer_id), db.get(TimeSlot, body.slot_id), db.get(ServiceAddress, body.address_id)
+def create(body: BookingIn, actor: Actor = Depends(current_customer), db: Session = Depends(get_db),
+           now: datetime = Depends(get_now)):
+    # รองรับ REQ-FN-008, REQ-IF-001, REQ-IF-005 | CR-11: ลูกค้ามาจาก token ที่อยู่ต้องเป็นของลูกค้าคนนี้
+    customer = db.get(Customer, actor.subject_id)
+    slot = db.get(TimeSlot, body.slot_id, with_for_update=True)
+    address = db.get(ServiceAddress, body.address_id)
     if not (customer and slot and address):
         raise HTTPException(404, "ไม่พบลูกค้า ช่วงเวลา หรือที่อยู่")
+    if address.customer_id != customer.id:
+        raise audit.deny(db, "customer", customer.id, None, "POST /bookings", now)
     try:
         service.deposit_for(body.category)  # REQ-BR-002: ประเภทงานต้องอยู่ในตารางราคาประเมิน (AS-10)
     except service.UnknownCategory:
@@ -111,18 +121,20 @@ def create(body: BookingIn, db: Session = Depends(get_db), now: datetime = Depen
 
 
 @router.get("/jobs/{job_id}")
-def get_job(job_id: int, db: Session = Depends(get_db)):
-    # CR-07 EV-045: R1 ยังไม่รู้ตัวผู้ขอ (ไม่มีการเข้าสู่ระบบ) endpoint นี้ไม่มีข้อมูลส่วนบุคคล
-    # SH-01 ยอมรับความเสี่ยงจนกว่า UC-02 มาใน R2 (GAP-24) ไม่ใช่การยกเว้น REQ-SEC-010 ถาวร
-    job = db.get(Job, job_id)
-    if not job:
-        raise HTTPException(404, "ไม่พบงาน")
+def get_job(job_id: int, reader: Reader = Depends(current_reader), db: Session = Depends(get_db),
+            now: datetime = Depends(get_now)):
+    # CR-07 EV-045: R1 ยังไม่รู้ตัวผู้ขอ SH-01 ยอมรับความเสี่ยงจนกว่า UC-02 มาใน R2 (GAP-24)
+    # CR-11 (R2): ตรวจสิทธิ์ตาม REQ-SEC-010 แล้ว เจ้าของงาน ช่างผู้รับมอบหมาย หรือ call center ไม่ใช่ตอบ 403 และบันทึก
+    job = audit.job_for_reader(db, job_id, reader.actor, reader.ops, "GET /jobs/{job_id}", now)
     return job_out(job)
 
 
 @router.get("/jobs/{job_id}/technician-view")
-def technician_view(job_id: int, technician_id: int, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def technician_view(job_id: int, actor: Actor = Depends(current_technician), db: Session = Depends(get_db),
+                    now: datetime = Depends(get_now)):
     # รองรับ REQ-SEC-004 และ REQ-SEC-010 (CR-07, AC-07-15): ไม่ใช่งานของช่างคนนี้หรือไม่มีงาน ตอบ 403 เหมือนกัน และบันทึก
+    # CR-11: ช่างมาจาก token (query technician_id เดิมไม่ใช้แล้ว)
+    technician_id = actor.subject_id
     job = audit.job_of_technician(db, job_id, technician_id, "GET /jobs/{job_id}/technician-view", now)
     data = service.technician_view(job, now)
     if "customer_phone" in data:
@@ -134,14 +146,15 @@ def technician_view(job_id: int, technician_id: int, db: Session = Depends(get_d
 
 
 class RescheduleIn(BaseModel):
-    customer_id: int
+    customer_id: int | None = None  # CR-11: ไม่ใช้แล้ว ลูกค้ามาจาก token
     new_slot_id: int
 
 
 @router.post("/jobs/{job_id}/reschedule")
-def reschedule(job_id: int, body: RescheduleIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def reschedule(job_id: int, body: RescheduleIn, actor: Actor = Depends(current_customer),
+               db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # รองรับ REQ-FN-056, BR-06 (CR-09, AC-14-16) และ REQ-SEC-010: ไม่ใช่งานของลูกค้าคนนี้ ตอบ 403 และบันทึก
-    job = audit.job_of_customer(db, job_id, body.customer_id, "POST /jobs/{job_id}/reschedule", now)
+    job = audit.job_of_customer(db, job_id, actor.subject_id, "POST /jobs/{job_id}/reschedule", now)
     slot = db.get(TimeSlot, body.new_slot_id)
     if not slot:
         raise HTTPException(404, "ไม่พบช่วงเวลา")
@@ -149,6 +162,6 @@ def reschedule(job_id: int, body: RescheduleIn, db: Session = Depends(get_db), n
         record = service.reschedule_job(db, job, slot, now)
     except service.RescheduleRejected as e:
         return JSONResponse({"reason": e.reason, "message": e.message}, status_code=409)
-    log_event(log, "job_rescheduled", job_id=job.id, customer_id=body.customer_id, slot_id=slot.id)
+    log_event(log, "job_rescheduled", job_id=job.id, customer_id=actor.subject_id, slot_id=slot.id)
     return {"job_id": job.id, "slot_id": job.slot_id, "scheduled_start": job.scheduled_start.isoformat(),
             "from_start": record.from_start.isoformat(), "reschedules_used": service.reschedules_used(db, job)}

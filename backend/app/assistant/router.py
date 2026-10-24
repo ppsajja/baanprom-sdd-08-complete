@@ -1,5 +1,7 @@
 """endpoint ของผู้ช่วย UC-14 (specs/005-ai-assistant/plan.md ข้อ 4) ทุกตัวอยู่ในบัญชี endpoint ของ operations.md (REQ-SEC-012)
-R1 ยังไม่มีการเข้าสู่ระบบ (UC-02) ลูกค้าบอกตัวเองด้วย customer_id ที่ส่งมา (TH-01, AS-14) เหมือนทุก feature ของ R1"""
+R1 ยังไม่มีการเข้าสู่ระบบ (UC-02) ลูกค้าบอกตัวเองด้วย customer_id ที่ส่งมา (TH-01, AS-14) เหมือนทุก feature ของ R1
+CR-11 (R2): ลูกค้ามาจาก token ของการเข้าสู่ระบบ (UC-02, REQ-SEC-014) customer_id ใน body ไม่ใช้แล้ว AS-14 ปิด
+เงื่อนไขของ EV-047 "ห้ามนำร่องกับลูกค้าก่อนมี UC-02" ข้อนี้ปลดแล้ว (เงื่อนไขอื่นของผู้ช่วยยังอยู่ ดู CR-11)"""
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +16,8 @@ from app.clock import get_now
 from app.ops.guard import require_ops
 from app.privacy import get_logger, log_event
 from app.assistant import service, handoff, records
+from app.auth.deps import current_customer
+from app.auth.service import Actor
 
 router = APIRouter()
 ops_router = APIRouter(dependencies=[Depends(require_ops)])
@@ -21,12 +25,12 @@ log = get_logger(__name__)
 
 
 class CustomerIn(BaseModel):
-    customer_id: int
+    customer_id: int | None = None  # CR-11: ไม่ใช้แล้ว ลูกค้ามาจาก token
 
 
 class MessageIn(BaseModel):
     conversation_id: int
-    customer_id: int
+    customer_id: int | None = None  # CR-11: ไม่ใช้แล้ว
     text: str
 
 
@@ -49,17 +53,19 @@ def status(db: Session = Depends(get_db)):
 
 
 @router.post("/assistant/conversations")
-def start(body: CustomerIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def start(body: CustomerIn | None = None, actor: Actor = Depends(current_customer), db: Session = Depends(get_db),
+          now: datetime = Depends(get_now)):
     # รองรับ REQ-AI-020 (ข้อความแรก) และ REQ-AI-022 (ปิดอยู่ไม่เริ่มบทสนทนา)
-    return service.start(db, body.customer_id, now)
+    return service.start(db, actor.subject_id, now)
 
 
 @router.post("/assistant/messages")
-def message(body: MessageIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def message(body: MessageIn, actor: Actor = Depends(current_customer), db: Session = Depends(get_db),
+            now: datetime = Depends(get_now)):
     # รองรับ REQ-AI-005 ถึง 013, REQ-DAT-010 (ลำดับ 5 ขั้นใน service.handle_message)
     if not service.is_enabled(db):
         return service.disabled_out()
-    conv = _conv(db, body.conversation_id, body.customer_id)
+    conv = _conv(db, body.conversation_id, actor.subject_id)
     out = service.handle_message(db, conv, body.text, now)
     out.pop("raw_answer", None)
     out.pop("facts", None)  # ข้อมูลที่ส่งให้ LLM ไม่ส่งกลับหน้าจอ อยู่ในบันทึกคำตอบสำหรับ call center
@@ -67,27 +73,31 @@ def message(body: MessageIn, db: Session = Depends(get_db), now: datetime = Depe
 
 
 @router.post("/assistant/proposals/{proposal_id}/confirm")
-def confirm(proposal_id: int, body: CustomerIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def confirm(proposal_id: int, body: CustomerIn | None = None, actor: Actor = Depends(current_customer),
+            db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # รองรับ REQ-AI-011 (ระดับ 2 ยืนยันก่อน) REQ-FN-056
-    return service.confirm(db, proposal_id, body.customer_id, now)
+    return service.confirm(db, proposal_id, actor.subject_id, now)
 
 
 @router.post("/assistant/proposals/{proposal_id}/decline")
-def decline(proposal_id: int, body: CustomerIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def decline(proposal_id: int, body: CustomerIn | None = None, actor: Actor = Depends(current_customer),
+            db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # รองรับ REQ-AI-012 เงื่อนไขที่ 3
-    return service.decline(db, proposal_id, body.customer_id, now)
+    return service.decline(db, proposal_id, actor.subject_id, now)
 
 
 @router.post("/assistant/conversations/{conversation_id}/handoff")
-def ask_human(conversation_id: int, body: CustomerIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def ask_human(conversation_id: int, body: CustomerIn | None = None, actor: Actor = Depends(current_customer),
+              db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # รองรับ REQ-AI-020 (ทางคุยกับเจ้าหน้าที่ทุกจอ)
-    return service.request_handoff(db, _conv(db, conversation_id, body.customer_id), now)
+    return service.request_handoff(db, _conv(db, conversation_id, actor.subject_id), now)
 
 
 @router.post("/assistant/turns/{turn_id}/report")
-def report(turn_id: int, body: CustomerIn, db: Session = Depends(get_db), now: datetime = Depends(get_now)):
+def report(turn_id: int, body: CustomerIn | None = None, actor: Actor = Depends(current_customer),
+           db: Session = Depends(get_db), now: datetime = Depends(get_now)):
     # รองรับ REQ-AI-022 ช่องร้องเรียน
-    out = service.report(db, turn_id, body.customer_id, now)
+    out = service.report(db, turn_id, actor.subject_id, now)
     if out is None:
         raise HTTPException(404, "ไม่พบคำตอบ")
     return out

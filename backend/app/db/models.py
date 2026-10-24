@@ -1,6 +1,6 @@
 """ตารางตาม plan.md ข้อ 3 (MD-DOM-01) ชื่อสถานะตาม glossary.md"""
 from datetime import datetime
-from sqlalchemy import String, Integer, Float, DateTime, ForeignKey
+from sqlalchemy import String, Integer, Float, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -245,3 +245,105 @@ class AssistantSetting(Base):
     key: Mapped[str] = mapped_column(String(40), primary_key=True)
     value: Mapped[str] = mapped_column(String(200))
     updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+# ---- R2 CR-11 ตัวตนของผู้ใช้ (UC-01 ช่างเข้าสู่ระบบ, UC-02 ลูกค้าลงทะเบียนและเข้าสู่ระบบ) specs/006-identity ----
+# ตารางใหม่ทั้งหมด ไม่แก้ตารางเดิม (migration m004) เบอร์โทรเป็น PII (REQ-PRV-002) ห้ามลง log
+
+class Account(Base):
+    """บัญชีเข้าสู่ระบบ 1 แถวต่อ 1 คน role = customer / technician subject_id = customers.id หรือ technicians.id
+    phone_norm คือเบอร์ที่ตัดเครื่องหมายออกเหลือตัวเลข (ใช้ค้นตอนขอ OTP) ลบทั้งแถวเมื่อลูกค้าขอลบข้อมูล (REQ-PRV-010)"""
+    __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("role", "phone_norm", name="uq_accounts_role_phone"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(20))
+    subject_id: Mapped[int] = mapped_column(Integer)
+    phone_norm: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class OtpChallenge(Base):
+    """REQ-SEC-013 คำขอ OTP 1 ครั้ง (MD-STM-03) เก็บเฉพาะค่าแฮชของรหัส ไม่เก็บรหัสจริง
+    sent = False เมื่อไม่มีบัญชีช่างของเบอร์นี้ (ไม่ส่งข้อความ แต่ตอบเหมือนกัน กันการเดาว่าเบอร์ไหนมีบัญชี)"""
+    __tablename__ = "otp_challenges"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(20))
+    phone_norm: Mapped[str] = mapped_column(String(20), index=True)
+    code_hash: Mapped[str] = mapped_column(String(64))
+    sent: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    wrong_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    replaced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class AuthSession(Base):
+    """REQ-SEC-014 session ของผู้ที่เข้าสู่ระบบแล้ว เก็บค่าแฮชของ token (sha256) ไม่เก็บ token จริง"""
+    __tablename__ = "auth_sessions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    account_id: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(20))
+    subject_id: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+# ---- R2 CR-12 ช่างรับหรือปฏิเสธงาน (UC-12) และจับคู่ช่างใหม่ (UC-05) specs/007-accept-rematch ----
+
+class JobAssignment(Base):
+    """REQ-FN-061 การมอบงานให้ช่าง 1 แถวต่อช่าง 1 คนต่องาน (MD-STM-04) response: pending / accepted / rejected / no_response
+    via_rematch = True คือช่างแทนที่ระบบจับคู่ให้ (UC-05) ลูกค้าปฏิเสธช่างแทนได้ (BR-01 R4)"""
+    __tablename__ = "job_assignments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(Integer, index=True)
+    technician_id: Mapped[int] = mapped_column(Integer)
+    slot_id: Mapped[int] = mapped_column(Integer)
+    via_rematch: Mapped[bool] = mapped_column(Boolean, default=False)
+    offered_at: Mapped[datetime] = mapped_column(DateTime)
+    respond_by: Mapped[datetime] = mapped_column(DateTime)
+    response: Mapped[str] = mapped_column(String(20), default="pending")
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+
+# ---- R2 CR-13 คิวข้อความในฐานข้อมูล และงานเบื้องหลังเมื่อรันหลาย process (Q-67) ----
+
+class NotificationMessage(Base):
+    """REQ-OP-008 ข้อความถึงลูกค้าและช่าง 1 แถวต่อ 1 ข้อความ เขียนในธุรกรรมเดียวกับการเปลี่ยนงาน จึงไม่หายเมื่อหลังบ้านเริ่มใหม่"""
+    __tablename__ = "notification_messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    to_role: Mapped[str] = mapped_column(String(20))
+    to_id: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(String(500))
+    job_id: Mapped[int] = mapped_column(Integer, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    due_at: Mapped[datetime] = mapped_column(DateTime)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    gave_up: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class SchedulerLease(Base):
+    """REQ-OP-008 งานเบื้องหลังที่ต้องทำที่เดียว (ส่งข้อความ ลบข้อมูล เตือนคนเวร จับคู่ช่างใหม่) ทำโดย process ที่ถือสิทธิ์อยู่"""
+    __tablename__ = "scheduler_leases"
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    holder: Mapped[str] = mapped_column(String(80))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class MetricMinute(Base):
+    """REQ-OP-005 ตัวนับต่อ endpoint ต่อนาทีที่รวมจากทุก process (แต่ละ process ส่งยอดของนาทีที่จบแล้วเข้ามาบวก)"""
+    __tablename__ = "metric_minutes"
+    endpoint: Mapped[str] = mapped_column(String(120), primary_key=True)
+    minute: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
+    requests: Mapped[int] = mapped_column(Integer, default=0)
+    failures: Mapped[int] = mapped_column(Integer, default=0)
+    empty_results: Mapped[int] = mapped_column(Integer, default=0)
+    total_ms: Mapped[float] = mapped_column(Float, default=0.0)
+    max_ms: Mapped[float] = mapped_column(Float, default=0.0)

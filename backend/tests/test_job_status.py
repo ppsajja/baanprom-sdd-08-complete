@@ -7,7 +7,7 @@ import pytest
 from app import config
 from app.db.models import Job, TimeSlot
 from app.notify.queue import queue
-from tests.conftest import NOW, TOMORROW_14, book
+from tests.conftest import NOW, TOMORROW_14, book, H, OPS
 
 
 def confirmed_job(client, db, seed, slot=None):
@@ -20,8 +20,15 @@ def confirmed_job(client, db, seed, slot=None):
 
 
 def change(client, job_id, technician_id, to_status, now=NOW):
+    # CR-11: technician_id คือผู้ส่ง ส่งเป็น token ของช่างคนนั้น (technician_id ใน body ระบบไม่ใช้แล้ว)
     return client.post(f"/jobs/{job_id}/status?now={now.isoformat()}",
-                       json={"technician_id": technician_id, "to_status": to_status})
+                       json={"technician_id": technician_id, "to_status": to_status},
+                       headers=H("technician", technician_id))
+
+
+def history(client, job):
+    # CR-11: อ่านประวัติในนามลูกค้าเจ้าของงาน (GET /jobs/{id}/history ต้องเข้าสู่ระบบแล้ว GAP-24 ปิด)
+    return client.get(f"/jobs/{job.id}/history", headers=H("customer", job.customer_id))
 
 
 # รองรับ AC-09-01 (REQ-FN-050)
@@ -32,7 +39,7 @@ def test_AC_09_01_technician_sees_only_own_jobs(client, db, seed):
     theirs = book(client, customer_id=seed["other"].id, slot_id=far_slot.id, address_id=seed["addr_other"].id)
     assert theirs.status_code == 201
     # When ช่าง ประสิทธิ์ เปิดรายการงานของตัวเอง
-    r = client.get(f"/technicians/{seed['prasit'].id}/jobs?now={NOW.isoformat()}")
+    r = client.get(f"/technicians/{seed['prasit'].id}/jobs?now={NOW.isoformat()}", headers=H("technician", seed["prasit"].id))
     # Then เห็นเฉพาะงานของตัวเอง พร้อมสถานะ "ยืนยันแล้ว" และปุ่มถัดไปคือ ออกเดินทาง
     assert r.status_code == 200
     ids = [j["job_id"] for j in r.json()]
@@ -40,7 +47,8 @@ def test_AC_09_01_technician_sees_only_own_jobs(client, db, seed):
     assert r.json()[0]["status"] == "confirmed"
     assert [n["status"] for n in r.json()[0]["next_statuses"]] == ["en_route"]
     # And ช่างที่ไม่มีในระบบได้ 404
-    assert client.get(f"/technicians/999/jobs?now={NOW.isoformat()}").status_code == 404
+    # CR-11: ช่าง ประสิทธิ์ ขอรายการของรหัสอื่นได้ 403 (ไม่ใช่รายการของตัวเอง REQ-SEC-010) จึงไม่รู้ว่ารหัสนั้นมีอยู่หรือไม่
+    assert client.get(f"/technicians/999/jobs?now={NOW.isoformat()}", headers=H("technician", seed["prasit"].id)).status_code == 403
 
 
 # รองรับ AC-09-02 (REQ-FN-051, REQ-DAT-002)
@@ -52,7 +60,7 @@ def test_AC_09_02_en_route_recorded(client, db, seed):
     r = change(client, job.id, seed["prasit"].id, "en_route", at)
     # Then งานมีสถานะ ช่างกำลังเดินทาง และประวัติมีแถว ยืนยันแล้ว ไปยัง ช่างกำลังเดินทาง
     assert r.status_code == 200 and r.json()["status"] == "en_route"
-    h = client.get(f"/jobs/{job.id}/history").json()["history"]
+    h = history(client, job).json()["history"]
     assert h[-1] == {"from_status": "confirmed", "to_status": "en_route", "at": at.isoformat()}
 
 
@@ -83,11 +91,11 @@ def test_AC_09_05_transition_not_allowed(client, db, seed, from_status, to_statu
     from app.db.models import set_status
     job = confirmed_job(client, db, seed)
     set_status(db, job, from_status, NOW); db.commit()
-    before = len(client.get(f"/jobs/{job.id}/history").json()["history"])
+    before = len(history(client, job).json()["history"])
     r = change(client, job.id, seed["prasit"].id, to_status)
     assert r.status_code == 409 and r.json()["reason"] == "transition_not_allowed"
     db.refresh(job); assert job.status == from_status
-    assert len(client.get(f"/jobs/{job.id}/history").json()["history"]) == before
+    assert len(history(client, job).json()["history"]) == before
 
 
 # รองรับ AC-09-06 (REQ-FN-051): ช่างคนอื่นเปลี่ยนสถานะงานไม่ได้
@@ -103,8 +111,9 @@ def test_AC_09_06_other_technician_cannot_change(client, db, seed):
 def test_AC_09_07_customer_and_call_center_see_same_status(client, db, seed):
     job = confirmed_job(client, db, seed)
     change(client, job.id, seed["prasit"].id, "en_route", TOMORROW_14 - timedelta(hours=1))
-    customer_view = client.get(f"/jobs/{job.id}").json()
-    history_view = client.get(f"/jobs/{job.id}/history").json()
+    # CR-11: ลูกค้าอ่านด้วย token ของตัวเอง call center อ่านด้วยกุญแจของ Ops (GAP-32 กุญแจแยกบทบาทยังเปิด)
+    customer_view = client.get(f"/jobs/{job.id}", headers=H("customer", job.customer_id)).json()
+    history_view = client.get(f"/jobs/{job.id}/history", headers=OPS).json()
     assert customer_view["status"] == "en_route" == history_view["status"]
     assert "customer_phone" not in customer_view  # มุมมองนี้ไม่มีเบอร์ (REQ-PRV-002 ไม่เกี่ยว แต่ไม่ส่งเกิน)
 
@@ -130,7 +139,7 @@ def test_AC_09_10_history_complete_in_order(client, db, seed):
     change(client, job.id, tech, "en_route", TOMORROW_14 - timedelta(hours=1))
     change(client, job.id, tech, "in_progress", TOMORROW_14)
     change(client, job.id, tech, "done", TOMORROW_14 + timedelta(hours=2))
-    h = client.get(f"/jobs/{job.id}/history").json()["history"]
+    h = history(client, job).json()["history"]
     assert [(r["from_status"], r["to_status"]) for r in h] == [
         ("pending_payment", "pending_payment"), ("pending_payment", "confirmed"),
         ("confirmed", "en_route"), ("en_route", "in_progress"), ("in_progress", "done"),

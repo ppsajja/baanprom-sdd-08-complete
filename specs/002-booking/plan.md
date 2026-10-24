@@ -273,3 +273,12 @@ T-17 (ตาราง) ก่อน T-18 ถึง T-23 ซึ่งทำคู
 
 ### 10.4 ลำดับงาน
 T-28 (config และ deposit-quote) ก่อน T-29 (หน้าจอ) T-30 (BR-01 R3 ใช้ร่วมกับ 004) และ T-31 (Pager) ทำคู่กันได้ รันทั้งชุดหลังทุก task ของ CR-10 (T-14 ของ 004)
+
+## 11. ปรับตาม CR-11, CR-08, CR-12, CR-13 (plan v5, 23 พ.ย. 2569)
+
+ข้อความสั่งในแชต ไม่ได้รัน /plan ใหม่ทั้งไฟล์ (prompt-log.md #91) ข้อ 1 ถึง 10 ไม่แก้
+- CR-11: ทุก endpoint ของ feature นี้รับลูกค้าหรือช่างจาก backend/app/auth/deps.py ที่อยู่ของการค้นหาและการจองต้องเป็นของลูกค้าคนนั้น GET /jobs/{id} ใช้ audit.job_for_reader (แผนเต็มอยู่ใน specs/006-identity/plan.md)
+- CR-08: ช่างคนเดิมอยู่ใน backend/app/matching/ (ใช้การค้นช่วงเวลาและ slot_visible_to เดิม) GET /me/past-technicians, GET /me/past-technicians/{id}/slots, GET /contact
+- CR-12: _finish_payment และ settle_on_hold_expiry เรียก matching.offer เมื่อยืนยันงาน (แผนเต็มอยู่ใน specs/007-accept-rematch/plan.md)
+- CR-13: คิวข้อความย้ายไปตาราง notification_messages ผู้เรียก enqueue ส่ง db เข้าไป งานเบื้องหลังผ่าน ops/lease.py ตัวนับรวมผ่าน ops/metrics.py ตัวเริ่มหลังบ้าน ops/serve.py การค้นหารวมคำค้นช่วงเวลาเป็นคำค้นเดียว index ใน m004
+- ตารางตรวจ Constraints ข้อ 5 เพิ่ม: REQ-SEC-013 ไม่เกี่ยวกับ feature นี้ เพราะ OTP อยู่ใน 006 | REQ-SEC-014 ใช้แล้ว (ทุก router) | REQ-PRV-011 ใช้แล้ว (พิกัดใช้ใน distance_km เท่านั้น ไม่ส่งกลับ) | REQ-OP-008 ใช้แล้ว (T-37)

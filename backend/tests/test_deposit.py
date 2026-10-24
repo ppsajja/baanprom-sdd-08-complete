@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from app import config
 from app.db.models import Payment, Technician, TimeSlot
-from tests.conftest import NOW, TOMORROW_14, book
+from tests.conftest import NOW, TOMORROW_14, book, H
 
 
 # รองรับ AC-07-11 (REQ-BR-002)
@@ -21,7 +21,8 @@ def test_AC_07_11_deposit_shown_equals_charged(client, db, seed, gateway, catego
                     end=TOMORROW_14 + timedelta(days=2, hours=2))
     db.add(slot)
     db.commit()
-    r = client.post(f"/slots/{slot.id}/hold?now={NOW.isoformat()}", json={"customer_id": seed["somchai"].id})
+    r = client.post(f"/slots/{slot.id}/hold?now={NOW.isoformat()}", json={"customer_id": seed["somchai"].id},
+                    headers=H("customer", seed["somchai"].id))
     assert r.status_code == 200
     # When ระบบแสดงหน้ายืนยัน (หน้าจอขอยอดจาก GET /deposit-quote)
     quote = client.get(f"/deposit-quote?category={category}")

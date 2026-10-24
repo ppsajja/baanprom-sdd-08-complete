@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app import config
 from app.db.models import Job, Refund, TimeSlot, set_status, SLOT_FREE, SLOT_BOOKED
 from app.notify.queue import queue
-from tests.conftest import NOW, TOMORROW_14, book
+from tests.conftest import NOW, TOMORROW_14, book, H
 
 
 def confirmed_job(client, db, seed):
@@ -20,11 +20,14 @@ def confirmed_job(client, db, seed):
 
 
 def quote(client, job_id, customer_id, now):
-    return client.get(f"/jobs/{job_id}/refund-quote?customer_id={customer_id}&now={now.isoformat()}")
+    # CR-11: customer_id คือผู้ส่ง ส่งเป็น token ของลูกค้าคนนั้น (query customer_id เดิมระบบไม่ใช้แล้ว)
+    return client.get(f"/jobs/{job_id}/refund-quote?customer_id={customer_id}&now={now.isoformat()}",
+                      headers=H("customer", customer_id))
 
 
 def cancel(client, job_id, customer_id, now):
-    return client.post(f"/jobs/{job_id}/customer-cancel?now={now.isoformat()}", json={"customer_id": customer_id})
+    return client.post(f"/jobs/{job_id}/customer-cancel?now={now.isoformat()}", json={"customer_id": customer_id},
+                       headers=H("customer", customer_id))
 
 
 # รองรับ AC-08-01 (REQ-FN-054, REQ-BR-001): ยอดคืนที่แสดงก่อนยืนยันเท่ากับยอดที่คืนจริง
@@ -54,10 +57,11 @@ def test_AC_08_02_cancel_sets_status_history_and_frees_slot(client, db, seed):
     # Then งานมีสถานะ ยกเลิก ประวัติมีแถว ยืนยันแล้ว ไปยัง ยกเลิก และช่วงเวลากลับเป็น ว่าง
     db.refresh(job); db.refresh(slot)
     assert job.status == "cancelled" and slot.state == SLOT_FREE and slot.held_by_customer_id is None
-    h = client.get(f"/jobs/{job.id}/history").json()["history"]
+    h = client.get(f"/jobs/{job.id}/history", headers=H("customer", seed["somchai"].id)).json()["history"]
     assert h[-1]["from_status"] == "confirmed" and h[-1]["to_status"] == "cancelled" and h[-1]["at"] == now.isoformat()
     # And ลูกค้าอื่นค้นหาแล้วเห็นช่วงเวลานี้ว่างอีกครั้ง
-    found = client.get(f"/technicians?category=ประปา&address_id={seed['addr_other'].id}&customer_id={seed['other'].id}&now={NOW.isoformat()}").json()
+    found = client.get(f"/technicians?category=ประปา&address_id={seed['addr_other'].id}&customer_id={seed['other'].id}&now={NOW.isoformat()}",
+                       headers=H("customer", seed["other"].id)).json()
     assert any(s["slot_id"] == slot.id for t in found for s in t["slots"])
 
 

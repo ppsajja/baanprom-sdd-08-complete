@@ -4,7 +4,8 @@
 ใช้: python uat_replay.py --base http://127.0.0.1:8000 --ops-token <OPS_TOKEN> --db <DATABASE_URL> [--group main|declined]
   main     ใช้กับเครื่องที่ตั้งค่า gateway จำลองแบบปกติ
   declined ใช้กับเครื่องที่ตั้ง FAKE_GATEWAY_REFUND_MODE=declined (scenario ของ AC-08-11)
-ข้อมูลตั้งต้นมาจาก uat_seed.py (ลูกค้าทดสอบ 30 ราย ช่างทดสอบ 10 คน)"""
+ข้อมูลตั้งต้นมาจาก uat_seed.py (ลูกค้าทดสอบ 30 ราย ช่างทดสอบ 10 คน)
+CR-11 (R2): ทุกคำขอแนบ token ของผู้ส่งผ่าน uat_auth.py (scenario ของ R1 ไม่เปลี่ยน ผู้ส่งยังอ่านจาก customer_id ที่สคริปต์ใส่)"""
 import argparse
 import sys
 from datetime import datetime, timedelta
@@ -12,12 +13,15 @@ from datetime import datetime, timedelta
 import httpx
 from sqlalchemy import create_engine, text
 
+from uat_auth import TestTokens, auth_hook
+
 CAT = "ประปา"
 
 
 class Replay:
     def __init__(self, base: str, token: str, db_url: str):
-        self.c = httpx.Client(base_url=base, timeout=30)
+        self.c = httpx.Client(base_url=base, timeout=30,
+                              event_hooks={"request": [auth_hook(TestTokens(db_url), token)]})
         self.ops = {"X-Ops-Token": token}
         self.db = create_engine(db_url)
         self.rows: list[tuple[str, str, bool, str]] = []

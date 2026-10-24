@@ -13,7 +13,7 @@ from app.db.models import (AssistantAction, AssistantTicket, AssistantTurn, Job,
 from app.notify.queue import queue
 from app.assistant import guard, records, retrieval, service, tools
 from app.assistant.llm import LLM, LLMReply, MockLLM, set_llm
-from tests.conftest import NOW, book
+from tests.conftest import NOW, book, H
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -34,12 +34,15 @@ def q(now=NOW):
 
 
 def start(client, customer_id, now=NOW):
-    return client.post(f"/assistant/conversations{q(now)}", json={"customer_id": customer_id}).json()
+    # CR-11: customer_id คือผู้ส่ง ส่งเป็น token ของลูกค้าคนนั้น (customer_id ใน body ระบบไม่ใช้แล้ว)
+    return client.post(f"/assistant/conversations{q(now)}", json={"customer_id": customer_id},
+                       headers=H("customer", customer_id)).json()
 
 
 def say(client, conv_id, customer_id, text, now=NOW):
     return client.post(f"/assistant/messages{q(now)}",
-                       json={"conversation_id": conv_id, "customer_id": customer_id, "text": text}).json()
+                       json={"conversation_id": conv_id, "customer_id": customer_id, "text": text},
+                       headers=H("customer", customer_id)).json()
 
 
 def booked_job(client, db, seed):
@@ -158,12 +161,12 @@ def test_AC_14_10_stop_tool_timeout_no_retry(client, db, seed):
     assert out["outcome"] == "proposal"
     tools.FAULTS["reschedule_job"] = "before"
     r = client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/confirm{q()}",
-                    json={"customer_id": seed["somchai"].id}).json()
+                    json={"customer_id": seed["somchai"].id}, headers=H("customer", seed["somchai"].id)).json()
     assert r["outcome"] == "unknown" and r["ticket_id"]
     assert tools.CALLS.count("reschedule_job") == 1           # ไม่เรียกซ้ำ
     assert _unchanged(db, job, seed["slot"].id, seed["slot"].start)
     # กดยืนยันซ้ำก็ไม่เรียกเครื่องมืออีก
-    client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/confirm{q()}", json={"customer_id": seed["somchai"].id})
+    client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/confirm{q()}", json={"customer_id": seed["somchai"].id}, headers=H("customer", seed["somchai"].id))
     assert tools.CALLS.count("reschedule_job") == 1
     t = db.get(AssistantTicket, r["ticket_id"])
     assert t.reason == "tool_error"
@@ -172,10 +175,10 @@ def test_AC_14_10_stop_tool_timeout_no_retry(client, db, seed):
 def test_AC_14_10_stop_after_two_declines(client, db, seed):
     job, conv, out = _propose(client, db, seed)
     cid = seed["somchai"].id
-    r1 = client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/decline{q()}", json={"customer_id": cid}).json()
+    r1 = client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/decline{q()}", json={"customer_id": cid}, headers=H("customer", cid)).json()
     assert r1["outcome"] == "declined"
     out2 = say(client, conv["conversation_id"], cid, "งั้นขอเลื่อนเป็น 5 ต.ค. 16:00")
-    r2 = client.post(f"/assistant/proposals/{out2['proposal']['proposal_id']}/decline{q()}", json={"customer_id": cid}).json()
+    r2 = client.post(f"/assistant/proposals/{out2['proposal']['proposal_id']}/decline{q()}", json={"customer_id": cid}, headers=H("customer", cid)).json()
     assert r2["outcome"] == "handoff" and db.get(AssistantTicket, r2["ticket_id"]).reason == "declined_twice"
     assert _unchanged(db, job, seed["slot"].id, seed["slot"].start)
 
@@ -210,7 +213,7 @@ def test_AC_14_11_action_log_complete_and_no_pii(client, db, seed, caplog):
     caplog.set_level(logging.INFO)
     job, conv, out = _propose(client, db, seed, "ขอเลื่อนเป็น 6 ต.ค. 14:00 ติดต่อ 081-234-5678 ได้")
     r = client.post(f"/assistant/proposals/{out['proposal']['proposal_id']}/confirm{q()}",
-                    json={"customer_id": seed["somchai"].id}).json()
+                    json={"customer_id": seed["somchai"].id}, headers=H("customer", seed["somchai"].id)).json()
     assert r["ok"] is True
     a = db.scalars(select(AssistantAction)).one()
     assert a.customer_id == seed["somchai"].id and "[phone]" in a.masked_text and "081-234-5678" not in a.masked_text
@@ -284,10 +287,10 @@ def test_AC_14_14_kill_switch_and_complaint(client, db, seed):
     client.post(f"/ops/assistant/switch{q()}", json={"enabled": True})
     assert say(client, conv["conversation_id"], seed["somchai"].id, "ช่างมายัง")["disabled"] is False
     # ร้องเรียน (NOW คือวันอาทิตย์ 4 ต.ค. 2569 2 วันทำการคือวันอังคาร 6 ต.ค.)
-    r = client.post(f"/assistant/turns/{out['turn_id']}/report{q()}", json={"customer_id": seed["somchai"].id}).json()
+    r = client.post(f"/assistant/turns/{out['turn_id']}/report{q()}", json={"customer_id": seed["somchai"].id}, headers=H("customer", seed["somchai"].id)).json()
     assert r["reply_due_at"].startswith("2026-10-06")
     assert db.get(AssistantTicket, r["ticket_id"]).reason == "complaint"
-    assert client.post(f"/assistant/turns/{out['turn_id']}/report{q()}", json={"customer_id": seed["other"].id}).status_code == 404
+    assert client.post(f"/assistant/turns/{out['turn_id']}/report{q()}", json={"customer_id": seed["other"].id}, headers=H("customer", seed["other"].id)).status_code == 404
 
 
 def test_AC_14_14_switch_needs_ops_token_in_production(client, monkeypatch):
@@ -302,7 +305,7 @@ def test_AC_14_16_reschedule_api(client, db, seed):
     job = booked_job(client, db, seed)
     old, new = seed["slot"], seed["slots"][3]   # พรุ่งนี้ 14:00 ไป มะรืน 14:00 ช่างคนเดิม
     queue.clear()
-    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": new.id})
+    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": new.id}, headers=H("customer", seed["somchai"].id))
     assert r.status_code == 200 and r.json()["reschedules_used"] == 1
     db.refresh(job); db.refresh(old); db.refresh(new)
     assert job.scheduled_start == new.start and job.slot_id == new.id and job.status == "confirmed"
@@ -312,13 +315,13 @@ def test_AC_14_16_reschedule_api(client, db, seed):
     assert {m.to_role for m in msgs} == {"customer", "technician"}
     assert all(m.due_at - m.created_at <= timedelta(seconds=60) for m in msgs)
     # ลูกค้าอื่นได้ 403 และบันทึกความพยายาม
-    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["other"].id, "new_slot_id": old.id})
+    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["other"].id, "new_slot_id": old.id}, headers=H("customer", seed["other"].id))
     assert r.status_code == 403
     assert db.scalars(select(SecurityEvent).where(SecurityEvent.endpoint == "POST /jobs/{job_id}/reschedule")).first()
     # ช่วงของช่างคนอื่นไม่ได้ (BR-06 ข้อ 4)
-    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": seed["slots"][4].id})
+    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": seed["slots"][4].id}, headers=H("customer", seed["somchai"].id))
     assert r.status_code == 409 and r.json()["reason"] == "other_technician"
     # ครั้งที่ 2 ได้ ครั้งที่ 3 ไม่ได้ (BR-06 ข้อ 2)
-    assert client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": seed["slots"][1].id}).status_code == 200
-    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": new.id})
+    assert client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": seed["slots"][1].id}, headers=H("customer", seed["somchai"].id)).status_code == 200
+    r = client.post(f"/jobs/{job.id}/reschedule{q()}", json={"customer_id": seed["somchai"].id, "new_slot_id": new.id}, headers=H("customer", seed["somchai"].id))
     assert r.status_code == 409 and r.json()["reason"] == "limit_reached"

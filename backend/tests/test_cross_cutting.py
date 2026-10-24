@@ -15,7 +15,7 @@ from app.db.models import Job, SecurityEvent, TimeSlot, Customer, ServiceAddress
 from app.db.migrations.m002_cr07 import upgrade
 from app.ops import alerts, backup
 from app.ops.metrics import Metrics, metrics
-from tests.conftest import NOW, TOMORROW_14, book
+from tests.conftest import NOW, TOMORROW_14, book, H
 
 
 @pytest.fixture()
@@ -90,9 +90,10 @@ def test_AC_00_03_structured_log_without_pii(client, db, seed, caplog):
     res = book(client, customer_id=seed["somchai"].id, slot_id=seed["slot"].id, address_id=seed["addr"].id)
     job_id = res.json()["job_id"]
     at = (TOMORROW_14 - timedelta(hours=1)).isoformat()
-    client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['prasit'].id}&now={at}")
-    client.get(f"/technicians/{seed['prasit'].id}/jobs?now={at}")
-    client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['far'].id}&now={at}")
+    prasit, far = H("technician", seed["prasit"].id), H("technician", seed["far"].id)  # CR-11 ผู้ส่งมาจาก token
+    client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['prasit'].id}&now={at}", headers=prasit)
+    client.get(f"/technicians/{seed['prasit'].id}/jobs?now={at}", headers=prasit)
+    client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['far'].id}&now={at}", headers=far)
     lines = [r.getMessage() for r in caplog.records if r.name.startswith("app.")]
     # Then ทุกบรรทัดของ log เป็น JSON ที่มีช่อง event
     parsed = [json.loads(line) for line in lines]
@@ -197,7 +198,8 @@ def test_AC_00_07_now_parameter_ignored_outside_test_mode(production, db, seed):
     far_past = datetime(2020, 1, 1, 9, 0)
     before = datetime.now()
     # When ผู้เรียกส่ง now= เพื่อย้อนเวลาตอนล็อกช่วงเวลา
-    r = production.post(f"/slots/{seed['slot'].id}/hold?now={far_past.isoformat()}", json={"customer_id": seed["somchai"].id})
+    r = production.post(f"/slots/{seed['slot'].id}/hold?now={far_past.isoformat()}", json={"customer_id": seed["somchai"].id},
+                        headers=H("customer", seed["somchai"].id))
     # Then ระบบใช้นาฬิกาของเครื่อง ล็อกหมดอายุ 10 นาทีนับจากเวลาจริง ไม่ใช่จากค่าที่ส่งมา
     assert r.status_code == 200
     expires = datetime.fromisoformat(r.json()["hold_expires_at"])

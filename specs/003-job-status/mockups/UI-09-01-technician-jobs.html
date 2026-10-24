@@ -65,51 +65,63 @@
   .btn.danger{background:#dc2626}
   .refund{margin-top:10px;font-size:14px;color:#115e59;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:10px 12px}
   .refund b{font-size:16px}
+  input.f,textarea.f,select.f{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;font-size:14px;color:#0f172a;background:#fff}
+  .act.alt{background:#fff;color:#334155;border:1px solid #94a3b8}
+  .act.orange{background:#f97316}
+  .warn{font-size:13px;color:#c2410c;font-weight:600;margin-top:6px}
+  .who{font-size:12px;color:#475569;text-align:right}
 </style>
 </head>
 <body>
 <!-- MOCKUP สำหรับคุยกับผู้ใช้และ PO ไม่ใช่โค้ดจริง ห้ามคัดลอกไฟล์นี้ไปเป็นโค้ดทั้งไฟล์
-     ตกลงกับ SH-01 และ SH-06 (หัวหน้าช่าง) วันที่ 18 ต.ค. 2569 (EV-044) เข้าสเปกผ่าน CR-05
+     ตกลงกับ SH-01 และ SH-06 (หัวหน้าช่าง) วันที่ 18 ต.ค. 2569 (EV-044) เข้าสเปกผ่าน CR-05 แก้ตาม CR-12 (EV-051) เพิ่มปุ่มรับงานและปฏิเสธงาน
      ข้อมูลทุกตัวเป็นตัวอย่าง ดูว่าอะไร "ต้องตรง" ได้ที่ส่วน 12 หน้าจอ (UI) ใน spec.md
-     data-req บอกว่าส่วนนั้นรองรับ requirement ข้อไหน กล่องเส้นประคือเรื่องที่ยังเป็น Q-xx ห้ามสร้าง -->
-<p class="note">MOCKUP UI-09-01 งานของช่าง (UC-09 ขั้น 1 ถึง 3) | รองรับ REQ-FN-050, REQ-FN-051, REQ-SEC-004 | 3 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง</p>
+     data-req บอกว่าส่วนนั้นรองรับ requirement ข้อไหน กล่องเส้นประคือเรื่องที่ยังเป็น Q-xx หรือ Won't ห้ามสร้าง -->
+<p class="note">MOCKUP UI-09-01 งานของช่าง | UC-09 ขั้น 1 ถึง 3 และ UC-12 รองรับ REQ-FN-050, REQ-FN-051, REQ-SEC-004, REQ-FN-061 (CR-12) | 3 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง</p>
 <div class="row">
   <section class="state">
-    <h2>สถานะ 1: มีงาน (AC-09-01, AC-09-02, AC-09-09)</h2>
+    <h2>สถานะ 1: มีงาน (AC-09-01, AC-09-02, AC-09-09, AC-12-01)</h2>
     <div class="phone">
       <div class="brand">บ้านพร้อม</div><div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
-      <div class="nav"><span class="">จองงาน</span><span class="">สถานะงาน</span><span class="">ยกเลิกการจอง</span><span class="on">งานของช่าง</span></div>
+      <div class="who">ช่าง ประสิทธิ์ <u>ออกจากระบบ</u></div>
+      <div class="nav"><span class="on">งานของช่าง</span></div>
       <h3>งานของฉัน</h3>
       <div class="job" data-req="REQ-FN-050">
+        <div class="top"><div><b>งาน #1031</b> <span class="sub">ประปา</span><div class="sub">นัดหมาย 20 ต.ค. 2569 14:00</div><div class="sub">ลูกค้า สมศรี</div><div class="dim" data-req="REQ-SEC-004">เบอร์โทรจะแสดง 2 ชั่วโมงก่อนนัด</div></div><span class="pill">ยืนยันแล้ว</span></div>
+        <p class="warn" data-req="REQ-FN-061">กรุณารับหรือปฏิเสธภายใน 10:30 น.</p>
+        <span class="act orange" data-req="REQ-FN-061">รับงาน</span> <span class="act alt" data-req="REQ-FN-061">ปฏิเสธงาน</span>
+      </div>
+      <div class="job" data-req="REQ-FN-050">
         <div class="top"><div><b>งาน #1024</b> <span class="sub">ไฟฟ้า</span><div class="sub">นัดหมาย 19 ต.ค. 2569 14:00</div><div class="sub">ลูกค้า สมหญิง</div><div class="dim" data-req="REQ-SEC-004">เบอร์โทรจะแสดง 2 ชั่วโมงก่อนนัด</div></div><span class="pill">ยืนยันแล้ว</span></div>
-        <span class="act" data-req="REQ-FN-051">ออกเดินทาง</span>
+        <span class="act alt" data-req="REQ-FN-061">ปฏิเสธงาน</span> <span class="act" data-req="REQ-FN-051">ออกเดินทาง</span>
       </div>
       <div class="job" data-req="REQ-FN-050">
         <div class="top"><div><b>งาน #1019</b> <span class="sub">ประปา</span><div class="sub">นัดหมาย 18 ต.ค. 2569 09:00</div><div class="sub">ลูกค้า สมชาย</div><div class="sub" data-req="REQ-SEC-004">โทร 081-234-5678</div></div><span class="pill">กำลังดำเนินงาน</span></div>
         <span class="act" data-req="REQ-FN-051">ปิดงาน</span>
       </div>
-      <div class="todo">รอ Q-30: ปุ่มย้อนสถานะเมื่อกดผิด (MD-STM-01 ไม่มีลูกศรย้อนกลับ)</div>
-      <div class="todo">รอ Q-32: ตัวกรองซ่อนงานที่ปิดแล้ว (ชั่วคราวแสดงทุกงาน AS-12)</div>
+      <p class="muted">งานที่ปิดแล้วแสดงย้อนหลัง 30 วัน (Q-32 ปิด) ไม่มีปุ่มย้อนสถานะ (Q-30 ตอบว่าไม่มี กดผิดโทร call center)</p>
     </div>
   </section>
   <section class="state">
     <h2>สถานะ 2: ไม่มีงาน (AC-09-01)</h2>
     <div class="phone">
       <div class="brand">บ้านพร้อม</div><div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
-      <div class="nav"><span class="">จองงาน</span><span class="">สถานะงาน</span><span class="">ยกเลิกการจอง</span><span class="on">งานของช่าง</span></div>
+      <div class="who">ช่าง ประสิทธิ์ <u>ออกจากระบบ</u></div>
+      <div class="nav"><span class="on">งานของช่าง</span></div>
       <h3>งานของฉัน</h3>
       <p class="muted" data-req="REQ-FN-050">ยังไม่มีงานที่มอบหมายให้คุณ</p>
     </div>
   </section>
   <section class="state">
-    <h2>สถานะ 3: เปลี่ยนสถานะไม่สำเร็จ (AC-09-05)</h2>
+    <h2>สถานะ 3: ระบบปฏิเสธ (AC-09-05, AC-12-05)</h2>
     <div class="phone">
       <div class="brand">บ้านพร้อม</div><div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
-      <div class="nav"><span class="">จองงาน</span><span class="">สถานะงาน</span><span class="">ยกเลิกการจอง</span><span class="on">งานของช่าง</span></div>
+      <div class="who">ช่าง ประสิทธิ์ <u>ออกจากระบบ</u></div>
+      <div class="nav"><span class="on">งานของช่าง</span></div>
       <h3>งานของฉัน</h3>
       <div class="alert red" data-req="REQ-FN-051"><b>เปลี่ยนสถานะนี้ไม่ได้</b>สถานะของงานยังเป็นค่าเดิม</div>
       <div class="job" data-req="REQ-FN-050">
-        <div class="top"><div><b>งาน #1024</b> <span class="sub">ไฟฟ้า</span><div class="sub">นัดหมาย 19 ต.ค. 2569 14:00</div><div class="sub">ลูกค้า สมหญิง</div><div class="dim" data-req="REQ-SEC-004">เบอร์โทรจะแสดง 2 ชั่วโมงก่อนนัด</div></div><span class="pill">ยืนยันแล้ว</span></div>
+        <div class="top"><div><b>งาน #1024</b> <span class="sub">ไฟฟ้า</span><div class="sub">นัดหมาย 19 ต.ค. 2569 14:00</div><div class="sub">ลูกค้า สมหญิง</div><div class="dim">เบอร์โทรจะแสดง 2 ชั่วโมงก่อนนัด</div></div><span class="pill">ยืนยันแล้ว</span></div>
         <span class="act" data-req="REQ-FN-051">ออกเดินทาง</span>
       </div>
     </div>

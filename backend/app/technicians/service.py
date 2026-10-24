@@ -42,29 +42,34 @@ def slot_visible_to(slot: TimeSlot, customer_id: int | None) -> bool:
 
 def search_available(db, category: str, address: ServiceAddress, now: datetime,
                      customer_id: int | None = None) -> list[dict]:
-    """คืนรายการช่างพร้อมช่วงเวลาที่ว่างใน SEARCH_DAYS_AHEAD วันถัดไป (AS-06 ไม่รวมวันนี้)"""
+    """คืนรายการช่างพร้อมช่วงเวลาที่ว่างใน SEARCH_DAYS_AHEAD วันถัดไป (AS-06 ไม่รวมวันนี้)
+    CR-13 (Q-68): เดิมค้นช่วงเวลาทีละช่าง (1 + จำนวนช่าง คำค้น) ตอนนี้กรองทักษะและระยะจากตารางช่างก่อน
+    แล้วค้นช่วงเวลาของช่างที่ผ่านทั้งหมดในคำค้นเดียว ผลและลำดับเหมือนเดิม (ช่างตามรหัส ช่วงเวลาตามเวลาเริ่ม)"""
     release_expired_holds(db, now)
     day_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     day_end = day_start + timedelta(days=config.SEARCH_DAYS_AHEAD)
-    result = []
-    for tech in db.scalars(select(Technician)):
+    techs = []
+    for tech in db.scalars(select(Technician).order_by(Technician.id)):
         if category not in [s.strip() for s in tech.skills.split(",")]:
             continue
         # รองรับ BR-03: ช่างที่ไกลเกินระยะให้บริการไม่ปรากฏในผลค้นหา
         if distance_km(tech.base_lat, tech.base_lng, address.lat, address.lng) > config.MAX_SERVICE_DISTANCE_KM:
             continue
-        slots = db.scalars(
-            select(TimeSlot).where(TimeSlot.technician_id == tech.id,
-                                   TimeSlot.start >= day_start, TimeSlot.start < day_end)
-            .order_by(TimeSlot.start)
-        ).all()
-        free = [s for s in slots if slot_visible_to(s, customer_id)]
-        if free:
-            result.append({
-                "technician_id": tech.id, "name": tech.name,
-                "slots": [{"slot_id": s.id, "start": s.start.isoformat(), "end": s.end.isoformat()} for s in free],
-            })
-    return result
+        techs.append(tech)
+    if not techs:
+        return []
+    by_tech: dict[int, list] = {t.id: [] for t in techs}
+    rows = db.execute(
+        select(TimeSlot.id, TimeSlot.technician_id, TimeSlot.start, TimeSlot.end, TimeSlot.state, TimeSlot.held_by_customer_id)
+        .where(TimeSlot.technician_id.in_(list(by_tech)), TimeSlot.start >= day_start, TimeSlot.start < day_end)
+        .order_by(TimeSlot.technician_id, TimeSlot.start)
+    ).all()
+    for r in rows:
+        # รองรับ BR-02 (slot_visible_to เดิม): ช่วงที่จองแล้วไม่ว่าง ช่วงที่คนอื่นล็อกไว้ก็ไม่ว่าง (ของตัวเองยังเห็น)
+        if r.state == SLOT_BOOKED or (r.state == SLOT_HELD and r.held_by_customer_id != customer_id):
+            continue
+        by_tech[r.technician_id].append({"slot_id": r.id, "start": r.start.isoformat(), "end": r.end.isoformat()})
+    return [{"technician_id": t.id, "name": t.name, "slots": by_tech[t.id]} for t in techs if by_tech[t.id]]
 
 
 def find_alternatives(db, taken: TimeSlot, now: datetime, customer_id: int | None = None) -> list[dict]:

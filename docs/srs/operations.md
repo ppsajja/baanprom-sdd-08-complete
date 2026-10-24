@@ -1,10 +1,11 @@
-# คู่มือรับมือเหตุ (runbook) ฉบับใช้จริง รุ่น 1.2 | บ้านพร้อม R1
+# คู่มือรับมือเหตุ (runbook) ฉบับใช้จริง รุ่น 1.3 | บ้านพร้อม R1 และ R2
 
 สถานะ: ใช้จริง (Baseline B3) | เจ้าของ: Ops lead (รับเป็นเจ้าของในประชุมทบทวน EV-045 วันที่ 24 ต.ค. 2569) | ที่มา: REQ-OP-006, REQ-OP-007, REQ-SEC-012 ใน specs/000-shared/constraints.md ส่วน 6 (CR-07 Approved)
 รุ่น 1.1 (CR-09 Approved EV-047 Baseline B4): เพิ่มเหตุการณ์ที่ 6 ผู้ช่วยตอบเพี้ยนหรือเลื่อนนัดผิด เครื่องมือของคนเวรสำหรับผู้ช่วย และ endpoint ของผู้ช่วยในบัญชี endpoint หัวหน้า call center เพิ่มในตารางบทบาท เหตุการณ์ที่ 6 ยังไม่ได้เดินตาม
 รุ่น 1.2 (CR-10 Approved EV-048): รายการคืนเงินที่ Finance ต้องปิดอ่านจาก GET /ops/refunds/follow-up (รวม declined ของ Q-34) ช่องทางถึงคนเวรเป็น webhook ที่ PAGER_WEBHOOK_URL (GAP-28) เพิ่ม endpoint ในบัญชี endpoint
 ตรวจรับด้านปฏิบัติการ R1 (OAT-3, EV-049): เหตุการณ์ที่ 4 ถึง 6 เดินตามแล้ว คำสั่งในส่วนเครื่องมือรันบน PostgreSQL ได้ทุกคำสั่ง (docs/acceptance/oat-results-r1.md) ซ้อมกู้คืนครั้งแรกบน PostgreSQL บันทึกเป็น docs/srs/incidents/INC-01.md
 ตรวจรับรอบสอง (EV-050 16 พ.ย. 2569): log ของแอปออก stdout เป็น JSON บรรทัดละเหตุการณ์แล้ว (DEF-02) คนเวรอ่าน log จากที่บริการระบบเก็บ stdout ไว้ หลังบ้านรัน process เดียวจนกว่าจะมีคำตอบ Q-67 เพราะคิวข้อความ ตัวนับ /metrics และสถานะการเตือนอยู่ในหน่วยความจำ (docs/handover/install-guide.md ขั้นที่ 5)
+รุ่น 1.3 (R2 ส่วน A CR-11 CR-12 CR-13 EV-051): หลังบ้านรันหลาย process ได้ (python -m app.ops.serve --workers N) คิวข้อความอยู่ในตาราง notification_messages ไม่หายเมื่อเริ่มใหม่ (Q-67 ปิด) เพิ่มเหตุการณ์ที่ 7 เข้าสู่ระบบไม่ได้ และคำสั่งดูงานที่กำลังหาช่างใหม่ บัญชี endpoint แก้ทุกแถวที่เคยตรวจด้วย customer_id หรือ technician_id เป็นตรวจจาก token และเพิ่ม endpoint ใหม่ 14 ตัว
 ตรวจแล้วด้วย walkthrough (วิธีตรวจของ REQ-OP-006): สมาชิกกลุ่ม Y ที่ไม่เคยเห็นระบบ เดินตามเหตุการณ์ที่ 1 ถึง 3 จนจบ แก้ 2 จุดที่ติดแล้ว (บันทึกใน CR-07 ส่วน walkthrough) เหตุการณ์ที่ 4 และ 5 เพิ่มหลัง walkthrough ยังไม่ได้เดินตาม
 ประวัติ: รุ่นร่าง (รอบ Failure Day) AI ร่างแทนทีม (prompt-log.md #68) | รุ่น 1.0 ทีมแก้ตามคำตอบ Q-40, Q-41, Q-43, Q-44 และผล walkthrough (prompt-log.md #71) การแก้ไฟล์นี้ต้องผ่าน Ops lead เพิ่มหรือปิด endpoint ต้องแก้ "บัญชี endpoint" ใน commit เดียวกัน (REQ-SEC-012)
 
@@ -155,6 +156,30 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 - เลื่อนนัดผิดเกิน 3 รายใน 1 วัน: SH-01
 ข้อความให้ call center: "ผู้ช่วยอัตโนมัติปิดชั่วคราว เจ้าหน้าที่จะดูแลคำถามของคุณเอง"
 
+## เหตุการณ์ที่ 7: ลูกค้าหรือช่างเข้าสู่ระบบไม่ได้ (CR-11)
+
+อ้าง: REQ-SEC-013, REQ-SEC-014, REQ-QA-010 | เพิ่มในรุ่น 1.3 ยังไม่ได้เดินตาม (walkthrough ทำในงวดตรวจรับของ R2)
+อาการ
+- call center ได้สายว่า "ไม่ได้รับรหัส" หรือ "ใส่รหัสแล้วเข้าไม่ได้" หลายสายติดกัน
+- /metrics แถว POST /auth/otp มีคำตอบ 503 (notify_down) เพิ่มขึ้น หรือ POST /auth/verify มี 401 410 มากผิดปกติ
+- security_events มีการปฏิเสธจากผู้ส่งเดียวเกิน 20 ครั้งใน 10 นาที (ระบบเตือนเองตาม REQ-SEC-010 บรรทัดที่ 3)
+ขั้นตอน
+1. ถ้า POST /auth/otp ตอบ 503 คือ IF-02 ไม่ตอบ ทำตามเหตุการณ์ที่ 4 ขั้น 2 รหัส OTP ไม่เข้าคิว (D-02-03) ลูกค้าต้องกดขอรหัสใหม่เองหลัง IF-02 กลับมา
+2. ผู้ที่เข้าสู่ระบบอยู่แล้วใช้ต่อได้ (session ไม่ขึ้นกับ IF-02) แจ้ง call center ให้บอกลูกค้าว่าถ้าเข้าสู่ระบบอยู่ไม่ต้องออก
+3. ช่างที่ไม่มีบัญชีขอรหัสได้คำตอบปกติแต่ไม่ได้ข้อความ (D-02-02) ให้ตรวจว่ามีบัญชีด้วยคำสั่ง SELECT subject_id, created_at FROM accounts WHERE role = 'technician' AND subject_id = <รหัสช่าง> ถ้าไม่มี ให้ Ops ออกบัญชีหลัง SH-06 ยืนยัน
+4. ห้ามอ่านรหัส OTP ให้ใคร ฐานข้อมูลไม่มีรหัสจริง (เก็บแฮช)
+จุดยกระดับ
+- IF-02 ไม่ตอบเกิน 30 นาที: Ops lead (ลูกค้าใหม่จองไม่ได้เลย)
+ใครตัดสินใจ
+- เปิดทางเข้าสู่ระบบอื่นชั่วคราว: ห้ามทำโดยไม่มี CR (REQ-SEC-014)
+
+## คำสั่งของ R2 สำหรับคนเวร (CR-12, CR-13)
+
+- งานที่กำลังหาช่างใหม่: SELECT id, scheduled_start FROM jobs WHERE status = 'rematching' ORDER BY scheduled_start (ระบบยกเลิกเองเมื่อครบ 2 ชั่วโมง หรือเหลือน้อยกว่า 1 ชั่วโมงก่อนนัด BR-07)
+- ช่างที่ไม่ตอบรับบ่อย (ให้หัวหน้าช่างดู Q-70): SELECT technician_id, count(*) FROM job_assignments WHERE response = 'no_response' GROUP BY technician_id
+- ข้อความที่ค้าง (แทนการดูในหน่วยความจำของ R1): SELECT count(*) FROM notification_messages WHERE delivered_at IS NULL AND gave_up = false
+- process ที่ทำงานเบื้องหลังอยู่: SELECT holder, expires_at FROM scheduler_leases (ถ้า expires_at เก่ากว่า 90 วินาที แปลว่าไม่มี process ทำงานเบื้องหลัง ให้ดู log ของทุก process)
+
 ## สำรองและกู้คืน (REQ-OP-007)
 
 ค่า (Q-44 ปิดใน EV-045): สำรองทุก 15 นาที เก็บย้อนหลัง 30 วัน ไว้คนละที่กับเครื่องหลัก | RPO ไม่เกิน 15 นาที | RTO ไม่เกิน 4 ชั่วโมง | ซ้อมกู้คืนทุก 3 เดือน ครั้งแรกก่อนเปิดให้ลูกค้าจริง
@@ -179,17 +204,17 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 
 | endpoint | feature | เปิดให้ใคร | ตรวจสิทธิ์อย่างไร | ข้อมูลส่วนบุคคลในคำตอบ |
 |---|---|---|---|---|
-| GET /technicians | 002 | ลูกค้า | ไม่ต้อง (ข้อมูลช่างและช่วงเวลาว่าง) | ไม่มี |
-| POST /slots/{slot_id}/hold | 002 | ลูกค้า | customer_id ล็อกได้ 1 ช่วง (REQ-SEC-011) | ไม่มี |
+| GET /technicians | 002 | ลูกค้า | token ของลูกค้า ที่อยู่ต้องเป็นของลูกค้าคนนี้ ไม่ใช่ 403 และบันทึก (CR-11) | ไม่มี |
+| POST /slots/{slot_id}/hold | 002 | ลูกค้า | token ของลูกค้า ล็อกได้ 1 ช่วง (REQ-SEC-011) | ไม่มี |
 | GET /deposit-quote | 002 | ลูกค้า | ไม่ต้อง | ไม่มี |
-| POST /bookings | 002 | ลูกค้า | ช่วงต้องล็อกโดย customer_id นี้หรือว่าง | ไม่มี |
-| GET /jobs/{job_id} | 002 | ลูกค้า call center | ยังไม่ตรวจ SH-01 ยอมรับความเสี่ยงจนถึง UC-02 (GAP-24) | ไม่มี |
-| GET /jobs/{job_id}/technician-view | 002 | ช่าง | technician_id ต้องเป็นผู้รับงาน 403 และบันทึก (REQ-SEC-010) | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
-| GET /technicians/{technician_id}/jobs | 003 | ช่าง | เห็นเฉพาะงานของ technician_id นี้ | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
-| POST /jobs/{job_id}/status | 003 | ช่าง | technician_id ต้องเป็นผู้รับงาน 403 และบันทึก | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
-| GET /jobs/{job_id}/history | 003 | ลูกค้า call center ช่าง | ยังไม่ตรวจ เหตุผลเดียวกับ GET /jobs/{job_id} (GAP-24) | ไม่มี |
-| GET /jobs/{job_id}/refund-quote | 004 | ลูกค้า | customer_id ต้องเป็นเจ้าของงาน 403 และบันทึก | ไม่มี |
-| POST /jobs/{job_id}/customer-cancel | 004 | ลูกค้า | customer_id ต้องเป็นเจ้าของงาน 403 และบันทึก (MU-01) | ไม่มี |
+| POST /bookings | 002 | ลูกค้า | token ของลูกค้า ช่วงต้องล็อกโดยลูกค้าคนนี้หรือว่าง ที่อยู่ต้องเป็นของลูกค้าคนนี้ (CR-11) | ไม่มี |
+| GET /jobs/{job_id} | 002 | ลูกค้า ช่าง call center | เจ้าของงาน ช่างผู้รับมอบหมาย (token) หรือ X-Ops-Token ไม่ใช่ 403 และบันทึก (CR-11 GAP-24 ปิด) | ไม่มี |
+| GET /jobs/{job_id}/technician-view | 002 | ช่าง | ช่างจาก token ต้องเป็นผู้รับงาน (ไม่ใช่ช่างที่ปฏิเสธแล้ว CR-12) 403 และบันทึก (REQ-SEC-010) | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
+| GET /technicians/{technician_id}/jobs | 003 | ช่าง | token ของช่างคนนี้เท่านั้น ขอรายการของคนอื่นได้ 403 และบันทึก (CR-11) | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
+| POST /jobs/{job_id}/status | 003 | ช่าง | ช่างจาก token ต้องเป็นผู้รับงาน (ไม่ใช่ช่างที่ปฏิเสธแล้ว CR-12) 403 และบันทึก | เบอร์ลูกค้าเฉพาะช่วง REQ-SEC-004 บันทึกทุกครั้ง |
+| GET /jobs/{job_id}/history | 003 | ลูกค้า call center ช่าง | เหมือน GET /jobs/{job_id} (CR-11) | ไม่มี |
+| GET /jobs/{job_id}/refund-quote | 004 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของงาน 403 และบันทึก | ไม่มี |
+| POST /jobs/{job_id}/customer-cancel | 004 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของงาน 403 และบันทึก (MU-01) | ไม่มี |
 | POST /ops/erasure-requests, GET /ops/erasure-requests/{request_id} | ทั้งระบบ | call center ผ่าน Ops | X-Ops-Token ในโหมด production | ไม่มี (มีแค่รหัสลูกค้า) |
 | GET /notifications/queue | ทั้งระบบ | Ops และ test | X-Ops-Token ในโหมด production | ไม่มี (ข้อความมีแค่เลขงานและสถานะ) |
 | GET /metrics | ทั้งระบบ | Ops | X-Ops-Token ในโหมด production | ไม่มี |
@@ -198,11 +223,19 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 | POST /jobs/{job_id}/cancel | 002 (เดิม) | ปิดแล้วตาม CR-07 (AC-07-16) | ไม่มี endpoint | ไม่มี |
 | POST /jobs/{job_id}/reschedule | 005 (REQ-FN-056) | ลูกค้า และผู้ช่วยด้วยสิทธิ์ของลูกค้า | customer_id ต้องเป็นเจ้าของงาน 403 และบันทึก (REQ-SEC-010) BR-06 ตอบ 409 | ไม่มี |
 | GET /assistant/status | 005 | ลูกค้า | ไม่ต้อง | ไม่มี (มีเลขโทรของ call center) |
-| POST /assistant/conversations, POST /assistant/messages | 005 | ลูกค้า | customer_id ต้องเป็นเจ้าของบทสนทนา ค้นข้อมูลเฉพาะงานของ customer_id (REQ-DAT-010) เพดาน 30 ข้อความต่อชั่วโมง | ไม่มี (คำตอบผ่านรั้วขาออก ไม่มีเบอร์) |
-| POST /assistant/proposals/{proposal_id}/confirm, POST /assistant/proposals/{proposal_id}/decline | 005 | ลูกค้า | customer_id ต้องเป็นเจ้าของข้อเสนอ | ไม่มี |
-| POST /assistant/conversations/{conversation_id}/handoff, POST /assistant/turns/{turn_id}/report | 005 | ลูกค้า | customer_id ต้องเป็นเจ้าของ | ไม่มี |
+| POST /assistant/conversations, POST /assistant/messages | 005 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของบทสนทนา ค้นข้อมูลเฉพาะงานของ customer_id (REQ-DAT-010) เพดาน 30 ข้อความต่อชั่วโมง | ไม่มี (คำตอบผ่านรั้วขาออก ไม่มีเบอร์) |
+| POST /assistant/proposals/{proposal_id}/confirm, POST /assistant/proposals/{proposal_id}/decline | 005 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของข้อเสนอ | ไม่มี |
+| POST /assistant/conversations/{conversation_id}/handoff, POST /assistant/turns/{turn_id}/report | 005 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของ | ไม่มี |
 | GET /ops/refunds/follow-up | 004 (CR-10) | Finance ผ่าน Ops | X-Ops-Token ในโหมด production | ไม่มี (เลขงาน ยอด ผล reference ของ gateway) |
 | POST /ops/assistant/switch, GET /ops/assistant/tickets, GET /ops/assistant/jobs/{job_id}/actions | 005 | หัวหน้า call center ผ่าน Ops | X-Ops-Token ในโหมด production (GAP-32 ยังไม่มีกุญแจแยกบทบาท) | ข้อความลูกค้าแบบปิดบังแล้ว |
+| POST /auth/otp, POST /auth/verify, POST /auth/register | 006 (CR-11) | ทุกคน | BR-09 (60 วินาที 5 ครั้งต่อชั่วโมง ลองผิด 5 ครั้ง) ตอบเหมือนกันทุกเบอร์ | เบอร์โทรในคำขอ ไม่ลง log รหัสไม่ส่งกลับในโหมด production |
+| POST /auth/logout, GET /me | 006 | ผู้เข้าสู่ระบบ | token | ชื่อ ที่อยู่ของตัวเอง ไม่มีพิกัด (REQ-PRV-011) |
+| POST /me/addresses, GET /me/jobs | 006 | ลูกค้า | token ของลูกค้า | ที่อยู่ของตัวเอง |
+| POST /ops/technicians/{technician_id}/account | 006 | Ops | X-Ops-Token ในโหมด production | เบอร์ของช่างในคำขอ |
+| POST /jobs/{job_id}/accept, POST /jobs/{job_id}/reject | 007 (CR-12) | ช่าง | ช่างจาก token ต้องเป็นผู้รับงาน 403 และบันทึก | ไม่มี |
+| POST /jobs/{job_id}/decline-substitute | 007 | ลูกค้า | ลูกค้าจาก token ต้องเป็นเจ้าของงาน 403 และบันทึก | ไม่มี |
+| GET /me/past-technicians, GET /me/past-technicians/{technician_id}/slots | 002 (CR-08) | ลูกค้า | token ของลูกค้า ช่างต้องอยู่ในรายการช่างที่เคยใช้ของลูกค้าคนนี้ ไม่ใช่ 403 และบันทึก | ไม่มี |
+| GET /contact | 002 (CR-08) | ทุกคน | ไม่ต้อง | ไม่มี (เลขโทรของ call center) |
 
 ## แบบบันทึกเหตุการณ์ (incident record)
 
@@ -265,7 +298,7 @@ runbook คือเอกสารที่คนเวรเปิดตอน
 ## สิ่งที่คู่มือนี้ยังขาด (บอกตรง ๆ)
 
 - เหตุการณ์ที่ 4 และ 5 ยังไม่ได้ walkthrough (OAT-3 รอบตรวจรับ R1 เดินแล้ว)
-- คิวข้อความและตัวนับ /metrics อยู่ในหน่วยความจำ หลังบ้านเริ่มใหม่แล้วข้อความที่ค้างหาย (GAP-38, Q-67)
+- คิวข้อความและตัวนับ /metrics อยู่ในหน่วยความจำ หลังบ้านเริ่มใหม่แล้วข้อความที่ค้างหาย (GAP-38, Q-67) (รุ่น 1.3: แก้แล้วด้วย CR-13 ตัวนับของนาทีที่ยังไม่จบยังหายได้ไม่เกิน 1 นาทีต่อ process)
 - ยังไม่มีการซ้อมกู้คืนบน PostgreSQL ของระบบจริง (เงื่อนไขก่อนเปิด R1 ตาม CR-07) ซ้อมบนเครื่องทดสอบแล้ว (INC-01)
 - ช่องทางถึงคนเวร (Pager ใน backend/app/ops/alerts.py) ตอนนี้เขียน log อย่างเดียว Ops lead ยังไม่เลือกบริการส่งข้อความเวร (GAP-28) รุ่น 1.2: Ops lead เลือกบริการแบบ webhook แล้ว (EV-048) โค้ดส่งได้แล้ว ปิดเมื่อ OAT-2 ผ่านบนเครื่องทดสอบ
 - ยังไม่มีเกณฑ์เตือนของคำตอบว่าง (Ops lead ตัดสินใจให้ดูรายสัปดาห์ก่อน)

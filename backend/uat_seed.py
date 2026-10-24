@@ -2,13 +2,13 @@
 ลูกค้าสมมติ 30 ราย ช่างสมมติ 10 คน ช่วงเวลาว่าง 7 วันข้างหน้า วันละ 3 ช่วงต่อช่าง
 ไม่มีเบอร์จริงของใคร: เบอร์ทุกเบอร์ขึ้นต้นด้วย 000-000 (REQ-PRV-002 ใช้กับการทดสอบด้วย)
 ใช้: DATABASE_URL=<ฐานข้อมูลของเครื่องทดสอบ> python uat_seed.py [--slots-per-day 3]
-ฐานข้อมูลต้องว่าง สคริปต์สร้างตารางด้วย migration ล่าสุด (m003) ถ้ามีลูกค้าอยู่แล้วจะหยุดโดยไม่เขียนอะไร"""
+ฐานข้อมูลต้องว่าง สคริปต์สร้างตารางด้วย migration ล่าสุด (m004) ถ้ามีลูกค้าอยู่แล้วจะหยุดโดยไม่เขียนอะไร"""
 import argparse
 from datetime import datetime, timedelta
 
 from app.db.session import engine, SessionLocal
-from app.db.migrations.m003_cr09 import upgrade
-from app.db.models import Customer, ServiceAddress, Technician, TimeSlot
+from app.db.migrations.m004_r2 import upgrade
+from app.db.models import Account, Customer, ServiceAddress, Technician, TimeSlot
 
 CATEGORIES = ["ประปา", "ไฟฟ้า", "แอร์"]
 # จุดตั้งต้นของช่างกระจายรอบพื้นที่ทดสอบ ห่างจากที่อยู่ลูกค้าไม่เกิน 15 กิโลเมตร (BR-03)
@@ -52,8 +52,13 @@ def seed(slots_per_day: int = 3, days: int = 7) -> dict:
         for t in techs:
             db.add(TimeSlot(technician_id=t.id, start=today, end=today + timedelta(hours=2)))
             n += 1
+        # CR-11 (R2): บัญชีเข้าสู่ระบบของลูกค้าทดสอบ (เบอร์เดียวกับในตาราง customers) และช่างทดสอบ 000-000-10nn
+        for c in customers:
+            db.add(Account(role="customer", subject_id=c.id, phone_norm=c.phone.replace("-", ""), created_at=datetime.now()))
+        for t in techs:
+            db.add(Account(role="technician", subject_id=t.id, phone_norm=f"000000{1000 + t.id:04d}", created_at=datetime.now()))
         db.commit()
-        return {"customers": len(customers), "technicians": len(techs), "slots": n}
+        return {"customers": len(customers), "technicians": len(techs), "slots": n, "accounts": len(customers) + len(techs)}
     finally:
         db.close()
 

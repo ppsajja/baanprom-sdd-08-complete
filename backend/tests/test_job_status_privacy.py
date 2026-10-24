@@ -3,12 +3,12 @@ REQ-SEC-004 เบอร์ลูกค้าในรายการงาน�
 import logging
 from datetime import timedelta
 
-from tests.conftest import TOMORROW_14
+from tests.conftest import TOMORROW_14, H
 from tests.test_job_status import confirmed_job, change
 
 
 def jobs_of(client, technician_id, now):
-    return client.get(f"/technicians/{technician_id}/jobs?now={now.isoformat()}").json()
+    return client.get(f"/technicians/{technician_id}/jobs?now={now.isoformat()}", headers=H("technician", technician_id)).json()
 
 
 # รองรับ AC-09-09 (REQ-SEC-004, REQ-PRV-002)

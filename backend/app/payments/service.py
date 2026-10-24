@@ -84,11 +84,13 @@ def settle_on_hold_expiry(db, job: Job, slot, gateway: Gateway, now: datetime) -
     if payment.result == "success":
         set_status(db, job, "confirmed", now)
         slot.state, slot.held_by_customer_id, slot.hold_expires_at = SLOT_BOOKED, None, None
-        queue.enqueue("customer", job.customer_id, f"จองสำเร็จ งาน #{job.id} {slot.start:%d/%m %H:%M}", job.id, now)
-        queue.enqueue("technician", slot.technician_id, f"มีงานใหม่ #{job.id} {slot.start:%d/%m %H:%M}", job.id, now)
+        from app.matching.service import offer  # CR-12 REQ-FN-061
+        offer(db, job, now)
+        queue.enqueue("customer", job.customer_id, f"จองสำเร็จ งาน #{job.id} {slot.start:%d/%m %H:%M}", job.id, now, db=db)
+        queue.enqueue("technician", slot.technician_id, f"มีงานใหม่ #{job.id} {slot.start:%d/%m %H:%M}", job.id, now, db=db)
         return True
     set_status(db, job, "auto_cancelled", now)
     slot.state, slot.held_by_customer_id, slot.hold_expires_at = SLOT_FREE, None, None
-    queue.enqueue("customer", job.customer_id, f"ชำระมัดจำไม่สำเร็จ งาน #{job.id} ถูกยกเลิก", job.id, now)
+    queue.enqueue("customer", job.customer_id, f"ชำระมัดจำไม่สำเร็จ งาน #{job.id} ถูกยกเลิก", job.id, now, db=db)
     log_event(log, "pending_payment_expired", job_id=job.id, result=payment.result)
     return False

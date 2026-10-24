@@ -3,16 +3,17 @@
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from tests.conftest import NOW
+from tests.conftest import NOW, H
 
 
 # รองรับ AC-07-08 (REQ-QA-003) ฉบับย่อส่วน
 def test_AC_07_08_search_under_load_scaled(client, db, seed):
     url = f"/technicians?category=ประปา&address_id={seed['addr'].id}&now={NOW.isoformat()}"
+    headers = H("customer", seed["somchai"].id)  # CR-11: การค้นหาต้องเข้าสู่ระบบ
 
     def timed_get(_):
         t0 = time.perf_counter()
-        r = client.get(url)
+        r = client.get(url, headers=headers)
         return r.status_code == 200, time.perf_counter() - t0
 
     # Given ลูกค้า 20 คน (ย่อจาก 500) ส่งคำขอค้นหาช่างพร้อมกัน

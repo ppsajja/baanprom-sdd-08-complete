@@ -5,11 +5,12 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.db.models import Job, Payment, TimeSlot, SecurityEvent
-from tests.conftest import NOW, TOMORROW_14, book
+from tests.conftest import NOW, TOMORROW_14, book, H
 
 
 def hold(client, slot_id, customer_id, now=NOW):
-    return client.post(f"/slots/{slot_id}/hold?now={now.isoformat()}", json={"customer_id": customer_id})
+    return client.post(f"/slots/{slot_id}/hold?now={now.isoformat()}", json={"customer_id": customer_id},
+                       headers=H("customer", customer_id))
 
 
 # รองรับ AC-07-12 (REQ-QA-010 บรรทัดที่ 3, REQ-FN-041)
@@ -34,7 +35,8 @@ def test_AC_07_12_gateway_unreachable_keeps_hold_as_pending(client, db, seed, ga
     assert [p.result for p in pays] == ["pending"] and pays[0].gateway_ref
     # When ครบ 10 นาทีแล้ว gateway ยังไม่ตอบ (ลูกค้าอีกคนค้นหา ระบบตรวจล็อกที่หมดอายุ)
     later = NOW + timedelta(minutes=10)
-    client.get(f"/technicians?category=ประปา&address_id={seed['addr_other'].id}&customer_id={seed['other'].id}&now={later.isoformat()}")
+    client.get(f"/technicians?category=ประปา&address_id={seed['addr_other'].id}&now={later.isoformat()}",
+               headers=H("customer", seed["other"].id))
     # Then งานเป็น "ยกเลิกอัตโนมัติ" ช่วงเวลาว่าง ไม่มีรายการชำระสำเร็จ และ void ด้วย reference เดิม
     db.refresh(job); db.refresh(slot)
     assert job.status == "auto_cancelled" and slot.state == "free"
@@ -92,8 +94,9 @@ def test_AC_07_15_technician_view_other_job_forbidden_and_logged(client, db, see
     job_id = res.json()["job_id"]
     at_1200 = (TOMORROW_14 - timedelta(hours=2)).isoformat()
     # When ช่าง "ไกลมาก" เปิดดูงานของช่าง "ประสิทธิ์" และงานที่ไม่มีอยู่
-    other = client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['far'].id}&now={at_1200}")
-    missing = client.get(f"/jobs/99999/technician-view?technician_id={seed['far'].id}&now={at_1200}")
+    far = H("technician", seed["far"].id)
+    other = client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['far'].id}&now={at_1200}", headers=far)
+    missing = client.get(f"/jobs/99999/technician-view?technician_id={seed['far'].id}&now={at_1200}", headers=far)
     # Then ทั้งสองคำขอได้ 403 ข้อความเดียวกัน ไม่บอกว่างานมีอยู่หรือไม่ และไม่มีเบอร์ลูกค้า
     assert other.status_code == missing.status_code == 403
     assert other.json() == missing.json()
@@ -104,7 +107,8 @@ def test_AC_07_15_technician_view_other_job_forbidden_and_logged(client, db, see
         ("technician", seed["far"].id, job_id), ("technician", seed["far"].id, 99999)]
     assert all(e.at.isoformat() == at_1200 for e in denied)
     # When ช่างเจ้าของงานเปิดดูในช่วง 2 ชั่วโมงก่อนนัด Then เห็นเบอร์ และมีบันทึกการส่งเบอร์ที่ไม่มีตัวเบอร์
-    mine = client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['prasit'].id}&now={at_1200}")
+    mine = client.get(f"/jobs/{job_id}/technician-view?technician_id={seed['prasit'].id}&now={at_1200}",
+                      headers=H("technician", seed["prasit"].id))
     assert mine.json()["customer_phone"] == "081-234-5678"
     shown = db.scalars(select(SecurityEvent).where(SecurityEvent.kind == "phone_revealed")).all()
     assert [(e.actor_id, e.job_id) for e in shown] == [(seed["prasit"].id, job_id)]

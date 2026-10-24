@@ -48,14 +48,16 @@
   .ok{font-size:14px;color:#0f766e;font-weight:600;text-align:center;margin-top:8px}
   .jobno{text-align:center;font-size:26px;font-weight:700;color:#0f172a;margin-top:2px}
   .center{text-align:center}
+  select.f{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;font-size:14px;color:#0f172a;background:#fff}
 </style>
 </head>
 <body>
 <!-- MOCKUP สำหรับคุยกับผู้ใช้และ PO ไม่ใช่โค้ดจริง ห้ามคัดลอกไฟล์นี้ไปเป็นโค้ดทั้งไฟล์
      ตกลงกับ SH-01 (เจ้าของ) วันที่ 11 ต.ค. 2569 (EV-043) เข้าสเปกผ่าน CR-03
+     แก้ตาม CR-11 (เลือกที่อยู่ Q-29) และ CR-08 (ช่างที่เคยใช้ เลขโทรเมื่อไม่มีช่างว่าง Q-28) ทบทวนกับ SH-01 ใน EV-051
      ข้อมูลทุกตัวเป็นตัวอย่าง ดูว่าอะไร "ต้องตรง" ได้ที่ส่วน 12 หน้าจอ (UI) ใน spec.md
      data-req บอกว่าส่วนนั้นรองรับ requirement ข้อไหน กล่องเส้นประคือเรื่องที่ยังเป็น Q-xx ห้ามสร้าง -->
-<p class="note">MOCKUP UI-07-01 เลือกช่างและช่วงเวลา (UC-07 ขั้น 1 ถึง 3) | รองรับ REQ-FN-008, REQ-FN-041 | 3 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง</p>
+<p class="note">MOCKUP UI-07-01 เลือกช่างและช่วงเวลา (UC-07 ขั้น 1 ถึง 3) | รองรับ REQ-FN-008, REQ-FN-041, REQ-FN-058 (ที่อยู่), REQ-FN-064, REQ-FN-065 | 4 สถานะ | ข้อมูลทั้งหมดเป็นตัวอย่าง</p>
 <div class="row">
   <section class="state">
     <h2>สถานะปกติ: มีช่างว่าง (AC-07-02)</h2>
@@ -66,7 +68,10 @@
       <h3>เลือกประเภทงานและช่างที่ว่าง</h3>
       <label>ประเภทงาน</label>
       <div class="chips" data-req="REQ-FN-008"><span class="chip on">ประปา</span><span class="chip">ไฟฟ้า</span><span class="chip">แอร์</span></div>
-      <div class="todo">รอ Q-29: การเลือกที่อยู่ให้บริการ (ชั่วคราวใช้ที่อยู่หลักของลูกค้า)</div>
+      <label>ที่อยู่ให้บริการ</label>
+      <select class="f" data-req="REQ-FN-058"><option>บ้านเลขที่ 12 ซอยสุขใจ</option><option>คอนโดริมน้ำ</option></select>
+      <label>ช่างที่เคยใช้</label>
+      <div class="chips" data-req="REQ-FN-064"><span class="chip">จองช่าง ประสิทธิ์ อีกครั้ง</span></div>
       <span class="btn search" data-req="REQ-FN-008">ค้นหาช่างที่ว่างใน 7 วัน</span>
       <div class="tech" data-req="REQ-FN-008"><b>ช่าง ประสิทธิ์</b>
         <div class="slots" data-req="REQ-FN-041"><span class="slot">12 ต.ค. 11:00</span><span class="slot">12 ต.ค. 14:00</span><span class="slot">12 ต.ค. 16:00</span><span class="slot">13 ต.ค. 14:00</span></div>
@@ -86,10 +91,12 @@
       <h3>เลือกประเภทงานและช่างที่ว่าง</h3>
       <label>ประเภทงาน</label>
       <div class="chips" data-req="REQ-FN-008"><span class="chip on">ประปา</span><span class="chip">ไฟฟ้า</span><span class="chip">แอร์</span></div>
-      <div class="todo">รอ Q-29: การเลือกที่อยู่ให้บริการ (ชั่วคราวใช้ที่อยู่หลักของลูกค้า)</div>
+      <label>ที่อยู่ให้บริการ</label>
+      <select class="f" data-req="REQ-FN-058"><option>บ้านเลขที่ 12 ซอยสุขใจ</option><option>คอนโดริมน้ำ</option></select>
       <span class="btn search" data-req="REQ-FN-008">ค้นหาช่างที่ว่างใน 7 วัน</span>
       <p class="muted" data-req="REQ-FN-008">ยังไม่มีช่างว่างใน 7 วันข้างหน้า</p>
-      <div class="todo">รอ Q-28: เสนอช่วงเวลาถัดไป หรือให้เข้าคิวรอ</div>
+      <p class="muted" data-req="REQ-FN-065">ให้เจ้าหน้าที่ช่วยหาช่าง โทร 02-000-0000</p>
+      <div class="todo">Won't R2: คิวรอ (Q-28, Q-33)</div>
     </div>
   </section>
   <section class="state">
@@ -101,12 +108,26 @@
       <h3>เลือกประเภทงานและช่างที่ว่าง</h3>
       <label>ประเภทงาน</label>
       <div class="chips" data-req="REQ-FN-008"><span class="chip on">ประปา</span><span class="chip">ไฟฟ้า</span><span class="chip">แอร์</span></div>
-      <div class="todo">รอ Q-29: การเลือกที่อยู่ให้บริการ (ชั่วคราวใช้ที่อยู่หลักของลูกค้า)</div>
+      <label>ที่อยู่ให้บริการ</label>
+      <select class="f" data-req="REQ-FN-058"><option>บ้านเลขที่ 12 ซอยสุขใจ</option><option>คอนโดริมน้ำ</option></select>
       <span class="btn search" data-req="REQ-FN-008">ค้นหาช่างที่ว่างใน 7 วัน</span>
       <div class="alert red" data-req="REQ-FN-041"><b>ช่วงเวลานี้เพิ่งถูกจองไป</b>กรุณาเลือกช่วงเวลาใหม่</div>
       <div class="tech" data-req="REQ-FN-008"><b>ช่าง ประสิทธิ์</b>
         <div class="slots" data-req="REQ-FN-041"><span class="slot">12 ต.ค. 11:00</span><span class="slot">12 ต.ค. 16:00</span><span class="slot">13 ต.ค. 14:00</span></div>
       </div>
+    </div>
+  </section>
+  <section class="state">
+    <h2>สถานะ 4: ช่างคนเดิมไม่ว่าง (AC-07-21)</h2>
+    <div class="phone">
+      <div class="brand">บ้านพร้อม</div>
+      <div class="tagline">จองช่างซ่อมบ้านที่ว่างจริง ไม่ต้องโทรถาม</div>
+      <div class="steps"><span class="on">1 เลือกช่าง</span><span class="">2 ยืนยัน</span><span class="">3 ผลการจอง</span></div>
+      <h3>เลือกประเภทงานและช่างที่ว่าง</h3>
+      <label>ช่างที่เคยใช้</label>
+      <div class="chips" data-req="REQ-FN-064"><span class="chip on">จองช่าง ประสิทธิ์ อีกครั้ง</span></div>
+      <div class="alert amber" data-req="REQ-FN-064">ช่าง ประสิทธิ์ ยังไม่มีช่วงเวลาว่างใน 7 วันข้างหน้า กรุณาค้นหาช่างคนอื่น</div>
+      <span class="btn search" data-req="REQ-FN-008">ค้นหาช่างที่ว่างใน 7 วัน</span>
     </div>
   </section>
 </div>

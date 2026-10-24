@@ -5,7 +5,7 @@ from datetime import timedelta
 import pytest
 
 from app.db.models import Job, set_status
-from tests.conftest import NOW, book
+from tests.conftest import NOW, book, H
 
 
 def make_confirmed_job(client, db, seed):
@@ -26,7 +26,8 @@ def cancel(client, job_id, by, now):
     job = s.get(Job, job_id)
     if by == "customer":
         s.close()
-        return client.post(f"/jobs/{job_id}/customer-cancel?now={now.isoformat()}", json={"customer_id": job.customer_id})
+        return client.post(f"/jobs/{job_id}/customer-cancel?now={now.isoformat()}", json={"customer_id": job.customer_id},
+                           headers=H("customer", job.customer_id))
     try:
         d, refund = service.cancel_job(s, job, by, now, get_gateway())
         return _Result(200, {"job_id": job.id, "status": job.status, "rule": d.rule,

@@ -18,7 +18,11 @@ def make_engine(url: str = config.DATABASE_URL):
         return create_engine(
             url, connect_args={"check_same_thread": False}, poolclass=StaticPool
         )
-    return create_engine(url)
+    # CR-13 (GAP-42): ขนาด pool เท่ากับจำนวนเธรดที่ FastAPI ใช้รัน endpoint (40) คำขอที่ได้เธรดแล้วไม่ต้องรอ connection
+    # ระบบจริงปรับได้ด้วย DB_POOL_SIZE (จำนวน process คูณค่านี้ต้องไม่เกิน max_connections ของ PostgreSQL)
+    import os
+    size = int(os.getenv("DB_POOL_SIZE", "40"))
+    return create_engine(url, pool_size=size, max_overflow=0, pool_pre_ping=True)
 
 
 engine = make_engine()

@@ -22,21 +22,38 @@ class NotOwner(Exception):
     """REQ-FN-050 / REQ-FN-051: งานไม่ใช่ของช่างคนนี้"""
 
 
-def technician_job_view(job: Job, now: datetime) -> dict:
-    """มุมมองช่าง 1 งาน: ใช้กฎเบอร์โทรเดิมของ UC-07 (technician_view, REQ-SEC-004) แล้วเพิ่มปุ่มที่กดได้"""
+def technician_job_view(job: Job, now: datetime, db=None) -> dict:
+    """มุมมองช่าง 1 งาน: ใช้กฎเบอร์โทรเดิมของ UC-07 (technician_view, REQ-SEC-004) แล้วเพิ่มปุ่มที่กดได้
+    CR-12: ถ้าส่ง db มา เพิ่มสถานะการตอบรับ (assignment) และปุ่มรับงาน ปฏิเสธงาน (responses) ของ UC-12"""
     data = technician_view(job, now)
     data["next_statuses"] = [
         {"status": s, "label": ACTION_LABELS[s]} for s in allowed_next(job.status)
     ]
+    if db is not None:
+        from app.matching.service import response_actions, assignment_view
+        data["responses"] = response_actions(db, job)
+        data["assignment"] = assignment_view(db, job)
     return data
 
 
 def list_jobs_for_technician(db, technician_id: int, now: datetime) -> list[dict]:
-    """REQ-FN-050: งานของช่างคนนี้เท่านั้น เรียงตามเวลานัด (AS-12: แสดงทุกงานรวมที่ปิดแล้ว รอ Q-32)"""
+    """REQ-FN-050: งานของช่างคนนี้เท่านั้น เรียงตามเวลานัด
+    CR-12: ไม่แสดงงานที่ช่างคนนี้ปฏิเสธหรือไม่ตอบแล้ว (ระหว่างหาช่างใหม่ job.technician_id ยังเป็นคนเดิม)
+    CR-12 (Q-32 ปิดใน EV-051): งานที่ปิดแล้ว (เสร็จสิ้น ยกเลิก ยกเลิกอัตโนมัติ) แสดงย้อนหลังไม่เกิน 30 วันนับจากเวลานัด"""
+    from datetime import timedelta
+    from app.matching.service import released_from
+    since = now - timedelta(days=config.TECH_CLOSED_JOBS_DAYS)
     jobs = db.scalars(
         select(Job).where(Job.technician_id == technician_id).order_by(Job.scheduled_start)
     ).all()
-    return [technician_job_view(j, now) for j in jobs]
+    out = []
+    for j in jobs:
+        if released_from(db, j, technician_id):
+            continue
+        if j.status in ("done", "cancelled", "auto_cancelled") and j.scheduled_start < since:
+            continue
+        out.append(technician_job_view(j, now, db))
+    return out
 
 
 def change_status(db, job: Job, technician_id: int, to_status: str, now: datetime) -> Job:
@@ -45,6 +62,9 @@ def change_status(db, job: Job, technician_id: int, to_status: str, now: datetim
         raise NotOwner()
     if not is_allowed(job.status, to_status):
         raise TransitionNotAllowed(job.status, to_status)
+    if to_status == "en_route":
+        from app.matching.service import mark_accepted_on_departure
+        mark_accepted_on_departure(db, job, now)  # CR-12 BR-07 ข้อ 2 กดออกเดินทาง = รับงาน
     set_status(db, job, to_status, now)  # ที่เดียวทั้งระบบ เขียน job_status_history ให้
     # รองรับ REQ-FN-053: วางข้อความถึงลูกค้าลงคิว due_at = now + 60 วินาที ไม่รอผลส่ง (IF-02)
     text = f"งาน #{job.id} สถานะ {STATUS_TH[to_status]}"
@@ -53,7 +73,7 @@ def change_status(db, job: Job, technician_id: int, to_status: str, now: datetim
         # ข้อความบอกช่องทางแจ้งปัญหา (เลขโทรของ call center ไม่ใช่ข้อมูลส่วนบุคคล)
         text += (f" หากงานยังไม่เรียบร้อย แจ้ง call center ที่ {config.call_center_tel()} "
                  f"ภายใน {config.JOB_ISSUE_REPORT_DAYS} วัน")
-    queue.enqueue("customer", job.customer_id, text, job.id, now)
+    queue.enqueue("customer", job.customer_id, text, job.id, now, db=db)
     db.commit()
     return job
 

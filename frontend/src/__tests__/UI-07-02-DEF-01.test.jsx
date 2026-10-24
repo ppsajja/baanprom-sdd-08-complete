@@ -3,6 +3,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import App from '../App.jsx'
 
+// CR-11 (R2): App ต้องมีผู้เข้าสู่ระบบแล้ว (เลิกใช้ลูกค้าคงที่) test ส่ง session ของลูกค้า 1 คนที่มีที่อยู่ 1 แห่งเข้าไป
+const SESSION = { role: 'customer', subjectId: 1, name: 'สมชาย', addresses: [{ address_id: 1, text: 'บ้านเลขที่ 12 ซอยสุขใจ' }] }
+
 const alt = { slot_id: 2, technician_id: 1, technician_name: 'ประสิทธิ์', start: '2026-10-12T16:00:00', end: '2026-10-12T18:00:00' }
 
 function fakeApi(holdAlt) {
@@ -17,7 +20,7 @@ function fakeApi(holdAlt) {
 }
 
 async function goToAlternative(api) {
-  render(<App api={api} />)
+  render(<App api={api} session={SESSION} />)
   fireEvent.click(screen.getByRole('button', { name: 'ค้นหาช่างที่ว่างใน 7 วัน' }))
   fireEvent.click(await screen.findByRole('button', { name: /14:00/ }))
   fireEvent.click(await screen.findByRole('button', { name: 'ยืนยันและชำระมัดจำ 350 บาท' }))

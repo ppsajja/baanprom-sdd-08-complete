@@ -1,4 +1,5 @@
-"""ค่าตั้งต้นของระบบ (ค่าที่มาจาก Open Question ติดป้าย Q-xx ไว้ แก้ที่นี่ที่เดียวเมื่อได้คำตอบ)"""
+"""ค่าตั้งต้นของระบบ (ค่าที่มาจาก Open Question ติดป้าย Q-xx ไว้ แก้ที่นี่ที่เดียวเมื่อได้คำตอบ)
+R2: ส่วนท้ายไฟล์เป็นค่าของ CR-11, CR-12, CR-08 และ CR-13 ทุกตัวมาจากประชุม EV-051"""
 import os
 
 # ต่อฐานข้อมูลผ่านตัวแปรแวดล้อม ระบบจริงเป็น PostgreSQL (ทีมเลือกเอง ดู D-00-02 ในไฟล์กลาง)
@@ -139,3 +140,38 @@ EVAL_FALSE_REFUSAL_MAX_PER_100 = 2  # ข้อที่ควรตอบ ป�
 EVAL_FAIRNESS_ACCURACY_GAP_PER_100 = 5
 EVAL_FAIRNESS_HANDOFF_RATIO = 2.0
 EVAL_P95_SECONDS = 4.0
+
+
+# ---- R2 CR-11 ตัวตนของผู้ใช้ (UC-01, UC-02 specs/006-identity) ค่าทุกตัวมาจากประชุม EV-051 ----
+
+# REQ-SEC-013 (OWASP A07:2025 หน้าบทเรียน Operational Security แถว A07): OTP หมดอายุใน 5 นาที ลองผิดได้ 5 ครั้ง
+OTP_DIGITS = 6
+OTP_TTL_MINUTES = 5
+OTP_MAX_WRONG_ATTEMPTS = 5
+# REQ-SEC-013 ขอ OTP ใหม่ได้เมื่อครบ 60 วินาทีจากครั้งก่อน และไม่เกิน 5 ครั้งต่อเบอร์ต่อชั่วโมง (Ops lead ใน EV-051)
+OTP_RESEND_SECONDS = 60
+OTP_MAX_PER_HOUR = 5
+# REQ-FN-058 หลังยืนยัน OTP แล้ว ลูกค้าใหม่ต้องกรอกชื่อและที่อยู่ให้เสร็จภายในกี่นาที
+REGISTRATION_WINDOW_MINUTES = 10
+# REQ-SEC-014 อายุ session ลูกค้า 30 วัน ช่าง 12 ชั่วโมง (หนึ่งวันทำงาน SH-06 ใน EV-051)
+SESSION_DAYS_CUSTOMER = 30
+SESSION_HOURS_TECHNICIAN = 12
+
+# ---- R2 CR-12 ช่างรับหรือปฏิเสธงาน (UC-12) และจับคู่ช่างใหม่ (UC-05) specs/007-accept-rematch ----
+
+# REQ-FN-061 ช่างต้องตอบรับหรือปฏิเสธภายใน 30 นาทีหลังได้รับงาน ไม่ตอบ = ปฏิเสธ (SH-06 ใน EV-051)
+TECH_RESPONSE_MINUTES = 30
+# REQ-FN-063 / BR-01 R4 (Q-50 ปิดใน EV-051): หาช่างใหม่ไม่ได้ภายใน 2 ชั่วโมง ยกเลิกและคืนมัดจำเต็ม
+REMATCH_HOURS = 2
+# Q-32 ปิดใน EV-051 (Ops lead): รายการงานของช่างแสดงงานที่ปิดแล้วย้อนหลังกี่วัน นับจากเวลานัด
+TECH_CLOSED_JOBS_DAYS = 30
+# BR-07 ช่างใหม่ต้องเริ่มงานเวลาเดิม และไม่จับคู่งานที่เหลือเวลาก่อนนัดน้อยกว่ากี่ชั่วโมง
+REMATCH_MIN_HOURS_BEFORE = 1
+
+# ---- R2 CR-08 ช่างคนเดิม (REQ-FN-064 BR-08) Q-66 ปิดใน EV-051 ----
+PAST_TECHNICIAN_MONTHS = 12
+PAST_TECHNICIAN_MAX = 3
+
+# ---- R2 CR-13 (Q-67 ปิดใน EV-051) งานเบื้องหลังเมื่อรันหลาย process ----
+# REQ-OP-008 process ที่ถือสิทธิ์ทำงานเบื้องหลังต่ออายุทุกนาที ถ้าไม่ต่อภายใน 90 วินาที process อื่นรับต่อ
+SCHEDULER_LEASE_SECONDS = 90

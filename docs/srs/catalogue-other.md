@@ -15,7 +15,7 @@
 | REQ-UX-005 | ผู้ใช้ต้องปรับขนาดตัวอักษรในแอปได้ถึง 200% ของค่าเริ่มต้น โดยเนื้อหาและปุ่มหลักทุกจุดยังคงมองเห็นและกดได้โดยไม่ต้องเลื่อนแนวนอน | UX | Should | Approved | EV-035 |
 | REQ-IF-002 | ระบบต้องส่งข้อความแจ้งเตือนผ่านผู้ให้บริการส่งข้อความ (SMS) ตาม Interface Contract IF-02 | IF | Must | Approved | MD-CTX-01 |
 | REQ-IF-006 | เมื่อ Payment Gateway ตอบผิดรูปแบบ ระบบต้องบันทึกเหตุการณ์และแจ้งฝ่ายปฏิบัติการภายใน 5 นาที | IF | Must | Draft (ข้อความรอยืนยันกับสัญญา gateway) | Interface Contract IF-01 (derived) |
-| REQ-PRV-00x | (ยังไม่ออกเลข) ข้อกำหนดการเก็บและอายุของ ServiceAddress.geoPoint ซึ่งเป็นข้อมูลส่วนบุคคล | PRV | ต้องยืนยัน | Draft (รอ Q-22) | data-dictionary.md (derived) |
+| REQ-PRV-00x | (ยังไม่ออกเลข) ข้อกำหนดการเก็บและอายุของ ServiceAddress.geoPoint ซึ่งเป็นข้อมูลส่วนบุคคล | PRV | ต้องยืนยัน | Draft (รอ Q-22) ออกเลขแล้วเป็น REQ-PRV-011 ใน catalogue.md รุ่น 1.7 (CR-11) | data-dictionary.md (derived) |
 | REQ-CMP-00x | (ยังไม่ออกเลข) ต้องมีข้อตกลงประมวลผลข้อมูล (DPA) กับผู้ให้บริการส่งข้อความ เพราะเบอร์โทรออกนอกระบบ | CMP | ต้องยืนยัน | Draft | Interface Contract IF-02 (derived) |
 
 ข้อความของ REQ-FN-030, REQ-IF-002, REQ-IF-006 และ REQ-CMP-00x เรียบเรียงขึ้นเพื่อให้ชุด repo ต่อเนื่อง หน้าบทเรียนให้เพียงสรุปสั้นหรือชื่อรหัส

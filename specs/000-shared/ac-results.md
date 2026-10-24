@@ -90,3 +90,16 @@ AC-00-01 ถึง AC-00-08 ไม่เปลี่ยน รันซ้ำท
 | eval | 20 จาก 20 | 20 จาก 20 (รันซ้ำ ผลเท่าเดิม) |
 | test เดิมที่เปลี่ยน | 5 จุดตาม CR-10 | 0 |
 | ข้อบกพร่องค้าง | | 0 (DEF-01 DEF-02 ปิด) |
+
+## รอบ R2 ส่วน A (23 พ.ย. 2569 รันจริงจาก export สะอาด test-run.txt)
+
+| AC | REQ | test | ผล | หมายเหตุ |
+|---|---|---|---|---|
+| AC-00-01 ถึง AC-00-08 | | test เดิม | ผ่าน | AC-00-03 AC-00-07 แก้เฉพาะการบอกผู้ส่ง (CR-11) AC-00-01 ไม่แก้ (GAP-39) |
+| AC-00-09 | REQ-OP-008 | test_AC_00_09_queued_messages_survive_restart | ผ่าน | |
+| AC-00-10 | REQ-OP-008 | test_AC_00_10_one_process_holds_the_scheduler_lease | ผ่าน | |
+| AC-00-11 | REQ-OP-008, REQ-OP-005 | test_AC_00_11_metrics_from_two_processes_add_up | ผ่าน | |
+| ทดสอบโหลด R2 | REQ-QA-003, REQ-OP-001 | backend/load_test.py บน PostgreSQL 2 process | AC-07-08 ฉบับ Q-68 ผ่าน AC-09-12 AC-08-09 ผ่าน แบบ 500 คำขอในวินาทีเดียวไม่ผ่าน (ไม่ใช่เกณฑ์แล้ว) | docs/acceptance/load-test-r2.md EV-052 |
+| เดินซ้อม scenario R1 ผ่าน API พร้อม token | ทุก REQ ของ R1 | backend/uat_replay.py บน PostgreSQL 2 process | 13 จาก 13 | docs/acceptance/uat-dryrun-r2-auth.txt |
+
+สรุปจำนวน: หลังบ้าน 139 passed (Python 3.11 และ 3.12) หน้าจอ 63 passed (32 ไฟล์) eval 20 จาก 20

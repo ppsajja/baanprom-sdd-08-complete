@@ -2,8 +2,14 @@
 // ปุ่มเปลี่ยนสถานะมีเฉพาะที่ระบบส่งมาใน next_statuses (ตาราง MD-STM-01 อยู่หลังบ้านที่เดียว D-00-05)
 // เบอร์โทรลูกค้าแสดงเฉพาะเมื่อระบบส่ง customer_phone มา หน้าจอไม่คำนวณเวลาเอง (REQ-SEC-004)
 // กล่อง "รอ Q-30" (ย้อนสถานะ) และ "รอ Q-32" (ซ่อนงานที่ปิดแล้ว) ใน mockup ไม่สร้าง
+// CR-12 (UC-12, REQ-FN-061): ปุ่ม "รับงาน" "ปฏิเสธงาน" มีเฉพาะที่ระบบส่งมาใน responses เวลาที่ต้องตอบมาจาก assignment.respond_by
+// ปฏิเสธแล้วงานออกจากรายการ (ระบบหาช่างใหม่ให้ลูกค้า UC-05) CR-11: ช่างมาจาก token ของการเข้าสู่ระบบ (UC-01)
 import { useEffect, useState } from 'react'
 import { statusTh, fmtDateTime } from '../statusNames.js'
+
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+}
 
 export default function TechnicianJobs({ api, technicianId }) {
   const [jobs, setJobs] = useState(null)
@@ -17,6 +23,17 @@ export default function TechnicianJobs({ api, technicianId }) {
   }
 
   useEffect(() => { load() }, [technicianId])
+
+  async function respond(job, action) {
+    setError('')
+    setBusy(job.job_id)
+    const call = action === 'accept' ? api.acceptJob : api.rejectJob
+    const { status, body } = await call({ jobId: job.job_id })
+    setBusy(null)
+    if (status === 200 && action === 'reject') return setJobs((list) => list.filter((j) => j.job_id !== job.job_id))
+    if (status === 200) return setJobs((list) => list.map((j) => (j.job_id === body.job_id ? body : j)))
+    setError(body.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+  }
 
   async function change(job, toStatus) {
     setError('')
@@ -49,6 +66,23 @@ export default function TechnicianJobs({ api, technicianId }) {
                 {statusTh(job.status)}
               </span>
             </div>
+            {job.assignment?.response === 'pending' && (
+              <p className="mt-2 text-sm font-medium text-orange-700" data-testid={`respond-by-${job.job_id}`}>
+                {job.assignment.via_rematch ? 'งานแทนช่างคนเดิม ' : ''}กรุณารับหรือปฏิเสธภายใน {fmtTime(job.assignment.respond_by)} น.
+              </p>
+            )}
+            {(job.responses ?? []).length > 0 && (
+              <div className="mt-3 flex gap-2">
+                {job.responses.map((r) => (
+                  <button key={r.action} type="button" disabled={busy === job.job_id} onClick={() => respond(job, r.action)}
+                    className={r.action === 'accept'
+                      ? 'rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:bg-slate-300'
+                      : 'rounded-lg border border-slate-400 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:text-slate-300'}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {job.next_statuses.length > 0 && (
               <div className="mt-3 flex gap-2">
                 {job.next_statuses.map((n) => (

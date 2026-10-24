@@ -120,3 +120,15 @@ AI ร่าง ทีมตรวจทุกแถวและเขียน�
 | REQ-QA-003 (เต็มรูป) | EV-007, EV-050 | ใช่ (B5) | AC-07-08 | backend/load_test.py | ตรวจรับ ค3 | ไม่มีโค้ดใหม่ | ไม่ผ่านบนเครื่องทดสอบ (Should) ผ่านถึงราว 200 คน | SH-01 รับ R1 ย้ายเกณฑ์ไปก่อนเปิดใช้จริง (Q-68) |
 
 ข้อค้นพบใหม่: ไม่มี GAP-36 บันทึกที่ gaps.md
+
+## แถวที่เพิ่มตาม R2 ส่วน A (CR-11, CR-08, CR-13 วันที่ 23 พ.ย. 2569)
+
+| REQ | ที่มา (EV) | อยู่ใน spec ส่วน 4 | AC | test | task | โค้ด / หน้าจอ | สถานะ | ทีมตัดสิน |
+|---|---|---|---|---|---|---|---|---|
+| REQ-FN-064 ช่างคนเดิม | EV-049, EV-051 | ใช่ (1.7) | AC-07-20 ถึง AC-07-23 | test_booking_cr08.py 4 ตัว, AC-07-20.test.jsx | T-34, T-35 | matching/service.py, matching/router.py, TechnicianPicker.jsx, UI-07-01 | ครบ | รับ ทบทวนการใช้จริงใน hypercare (CR-08) |
+| REQ-FN-065 A1 เลขโทร call center | EV-051 (Q-28) | ใช่ (1.7) | AC-07-24 | test_AC_07_24, AC-07-20.test.jsx | T-35, T-36 | technicians/router.py (GET /contact), TechnicianPicker.jsx | ครบ ปิด F-05 F-14 | รับ |
+| REQ-SEC-014 (feature นี้) | EV-051 | ส่วน 4 (บรรทัดอ้าง) | AC เดิมทุกข้อ AC-07-02 (When ใหม่) | test เดิมตามตาราง CR-11 | T-03 ของ 006 | booking/router.py, technicians/router.py | ครบ ปิด F-06 (ที่อยู่คงที่) | รับ |
+| REQ-QA-003 (ฉบับ Q-68) | EV-007, EV-051, EV-052 | ใช่ | AC-07-08 (Given ใหม่) | backend/load_test.py --rate 50 --duration 300, test_load_scaled.py | T-37 | technicians/service.py, ops/serve.py, db/session.py | ผ่านบนเครื่องทดสอบ (p95 0.023 วินาที) ยังไม่ได้วัดบนเครื่องขนาดจริง | รับเป็นหลักฐานของโค้ด เกณฑ์ตรวจรับยังอยู่ก่อนเปิดใช้จริง |
+| REQ-OP-008 | EV-049 (OAT-3), EV-051 | ส่วน 4 (บรรทัดอ้าง) | AC-00-09 ถึง AC-00-11 | test_cross_cutting_cr13.py | T-37 | notify/queue.py, ops/lease.py, ops/metrics.py | ครบ ปิด GAP-38 | รับ |
+
+ข้อค้นพบ: F-05 ปิด (A1 มี AC แล้ว AC-07-24) | F-06 ปิด (ที่อยู่มาจากการเข้าสู่ระบบ เลือกได้ AC-02-10) | F-14 ปิด (คิวรอไม่มีรหัส UC และไม่ใช้ UC-08 Q-33 ปิด) ไม่มี F ใหม่

@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 
 # CR-07 REQ-SEC-012: ช่อง now= ใช้ได้เฉพาะโหมด test (ค่าตั้งต้นของระบบคือ production) ต้องตั้งก่อน import app
 os.environ["APP_ENV"] = "test"
+# CR-11: call center อ่านงานด้วยกุญแจของ Ops (X-Ops-Token) ซึ่งต้องตั้ง OPS_TOKEN ทุกโหมด test ที่ต้องการค่าอื่นตั้งเองด้วย monkeypatch
+os.environ.setdefault("OPS_TOKEN", "ops-token-for-tests")
+OPS = {"X-Ops-Token": os.environ["OPS_TOKEN"]}
 
 import pytest
 from fastapi.testclient import TestClient
@@ -75,8 +78,44 @@ def seed(db):
             "prasit": prasit, "far": far, "slot": slots[0], "slots": slots}
 
 
+def auth_headers(role: str, subject_id: int) -> dict:
+    """CR-11 (R2): header Authorization ของลูกค้าหรือช่างที่เข้าสู่ระบบแล้ว สร้าง session ตรงในฐานข้อมูลของ test
+    ไม่ผ่าน OTP (การเข้าสู่ระบบจริงตรวจใน test_identity.py) session ยาวพอสำหรับเวลาจำลองทุกตัวในชุด test
+    เป็นทางเดียวที่ test เดิมใช้บอกว่า "ใครเป็นผู้ส่ง" แทน customer_id และ technician_id ที่เคยส่งใน body และ query"""
+    from app.auth.service import issue_session, normalize_phone
+    from app.db.models import Account
+    s = db_session.SessionLocal()
+    db_session._sqlite_gate.acquire()  # test ที่ยิงพร้อมกันหลายเธรดเรียก helper นี้ในเธรด (SQLite ใช้ connection เดียว)
+    try:
+        acc = s.query(Account).filter_by(role=role, subject_id=subject_id).first()
+        if acc is None:
+            obj = s.get(Customer if role == "customer" else Technician, subject_id)
+            phone = getattr(obj, "phone", "") or ""
+            try:
+                phone_norm = normalize_phone(phone)
+            except Exception:
+                phone_norm = f"09{subject_id:08d}" if role == "customer" else f"08{subject_id:08d}"
+            acc = Account(role=role, subject_id=subject_id, phone_norm=phone_norm, created_at=SESSION_FROM)
+            s.add(acc)
+            s.commit()
+        token, _ = issue_session(s, acc, SESSION_FROM, lifetime=timedelta(days=3650 * 3))
+        return {"Authorization": f"Bearer {token}"}
+    finally:
+        s.close()
+        db_session._sqlite_gate.release()
+
+
+# CR-11: session ของ test เริ่มก่อนเวลาจำลองทุกตัว (บาง test ย้อนเวลาไปก่อน NOW) และอยู่นาน (test โหมด production ใช้นาฬิกาจริง)
+SESSION_FROM = NOW - timedelta(days=60)
+
+
+H = auth_headers  # ชื่อสั้นสำหรับ test
+
+
 def book(client, *, customer_id, slot_id, address_id, category="ประปา", now=NOW):
-    """ช่วย POST /bookings ให้สั้น"""
+    """ช่วย POST /bookings ให้สั้น
+    CR-11: ส่ง Authorization ของลูกค้าที่ระบุ ลูกค้ามาจาก token (customer_id ใน body ระบบไม่ใช้แล้ว คงไว้ให้ test อ่านง่าย)"""
     return client.post(f"/bookings?now={now.isoformat()}",
                        json={"customer_id": customer_id, "slot_id": slot_id,
-                             "address_id": address_id, "category": category})
+                             "address_id": address_id, "category": category},
+                       headers=auth_headers("customer", customer_id))

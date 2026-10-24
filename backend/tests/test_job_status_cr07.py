@@ -11,7 +11,7 @@ from app import config
 from app.db.models import Job, TimeSlot, Technician, Customer, ServiceAddress, SecurityEvent
 from app.notify.queue import queue, FakeNotifier
 from tests.conftest import NOW, TOMORROW_14, book
-from tests.test_job_status import confirmed_job, change
+from tests.test_job_status import confirmed_job, change, history
 
 
 # รองรับ AC-09-11 (QAS-1, REQ-FN-053, Q-38)
@@ -59,7 +59,7 @@ def test_AC_09_12_status_change_under_load_scaled(client, db, seed):
     # Then ทุกคำขอได้ 200 และประวัติมีแถวใหม่ครบ
     assert all(code == 200 for code, _ in results)
     for jid, _ in jobs:
-        h = client.get(f"/jobs/{jid}/history").json()["history"]
+        h = history(client, db.get(Job, jid)).json()["history"]
         assert h[-1]["to_status"] == "en_route"
     # Then 95 ใน 100 ไม่เกิน 1 วินาที (ย่อส่วน: 10 ใน 10)
     assert sum(1 for _, sec in results if sec <= 1.0) == 10
@@ -81,11 +81,12 @@ def test_AC_09_13_if02_down_status_saved_message_resent_once(client, db, seed):
         queue.deliver_due(notifier, at + timedelta(minutes=minute))
     # Then สถานะงานเป็น "ช่างกำลังเดินทาง" และประวัติมี 1 แถวตั้งแต่ตอนกด
     assert r.status_code == 200
-    h = client.get(f"/jobs/{job.id}/history").json()["history"]
+    h = history(client, job).json()["history"]
     assert [x for x in h if x["to_status"] == "en_route"] == [{"from_status": "confirmed", "to_status": "en_route", "at": at.isoformat()}]
     # Then ข้อความถึงลูกค้าถูกส่งสำเร็จ 1 ข้อความ ไม่มีข้อความซ้ำ และลองส่งไม่เกิน 6 ครั้ง ห่างกัน 5 นาที
     msg = [m for m in queue.for_job(job.id) if m.to_role == "customer"][0]
-    assert len(notifier.sent) == 1 and notifier.sent[0] is msg
+    # CR-13 (Q-67): คิวอยู่ในฐานข้อมูล ข้อความที่อ่านคืนเป็นวัตถุใหม่ทุกครั้ง จึงเทียบด้วยเลขข้อความแทน "is"
+    assert len(notifier.sent) == 1 and notifier.sent[0].id == msg.id
     assert msg.attempts == 5 and msg.delivered_at == at + timedelta(minutes=20)
 
 

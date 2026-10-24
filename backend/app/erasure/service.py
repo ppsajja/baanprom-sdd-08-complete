@@ -45,6 +45,9 @@ def anonymize(db, customer: Customer, now: datetime) -> None:
     # CR-09 (Q-57 SH-05): ข้อความที่ลูกค้าพิมพ์กับผู้ช่วยเป็นข้อมูลของลูกค้า ลบพร้อมกัน คงรหัสและผลไว้
     from app.assistant.records import erase_customer_text
     erase_customer_text(db, customer.id)
+    # CR-11 (REQ-PRV-010 กับ REQ-SEC-014): ลบบัญชีที่มีเบอร์ และยกเลิก session ทุกตัว ลูกค้าคนนี้เข้าสู่ระบบด้วยบัญชีเดิมไม่ได้อีก
+    from app.auth.service import revoke_customer
+    revoke_customer(db, customer.id, now)
 
 
 def append_ledger(customer_id: int, now: datetime, path: str | None = None) -> None:

@@ -1,5 +1,5 @@
 {
-  "name": "baanprom-sdd-07-r1-done",
+  "name": "baanprom-sdd-08-complete",
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "customizations": {
     "vscode": {

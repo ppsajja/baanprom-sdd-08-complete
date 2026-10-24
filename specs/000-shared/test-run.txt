@@ -1,122 +1,155 @@
-# ผลรันจริง เวลาเครื่อง 2026-10-24 13:40 (หลังตรวจรับรอบสอง แก้ DEF-01 DEF-02 ตอนตั้ง Baseline B5 วันที่ในเคส 16 พ.ย. 2569 เป็นวันสมมติ เวลาในบรรทัดนี้คือเวลาจริงของเครื่องที่รัน) จาก export สะอาด: คัดลอกไฟล์ที่ git ติดตามและไฟล์ใหม่ไปโฟลเดอร์ว่าง แล้วรัน (สคริปต์ที่ใช้อยู่นอก repo)
+# ผลรันจริง เวลาเครื่อง 2026-10-24 15:09 (R2 ส่วน A: CR-11 CR-12 CR-08 CR-13 ตอนตั้ง Baseline B6 วันที่ในเคสเป็นวันสมมติ เวลาในบรรทัดนี้คือเวลาจริงของเครื่องที่รัน) จาก export สะอาด: คัดลอกไฟล์ที่ git ติดตามและไฟล์ใหม่ไปโฟลเดอร์ว่าง แล้วรัน (สคริปต์ที่ใช้อยู่นอก repo)
 # หลังบ้าน: cd backend && pytest -v -k "AC_" (รัน 2 ครั้ง ด้วย Python 3.11 และ 3.12) | หน้าจอ: cd frontend && npm ci && npx vitest run | eval: python eval_run.py
 # test รันทั้งโครงการ ไม่แยกราย feature (D-00-04) ไฟล์นี้จึงอยู่ที่ specs/000-shared ที่เดียว
-# path ของเครื่องที่รันปรับเป็นชื่อกลาง /workspaces/baanprom-sdd-07-r1-done ส่วนหน้าจอเขียนเครื่องหมายผ่านเป็นคำว่า PASS นอกนั้นตามที่เครื่องพิมพ์
-# สรุป: Python 3.11 = 105 passed, 1 warning in 14.98s | Python 3.12 = 105 passed, 1 warning in 14.67s | vitest = 42 passed (25 ไฟล์) | eval = 20 จาก 20 เกณฑ์ (P-1.1 eval set 1.1 ผลเท่ากับ specs/005-ai-assistant/eval-results.md)
-# เทียบรอบ CR-10 (specs/000-shared/test-run-cr10.txt): หลังบ้าน 104 เป็น 105 (ใหม่ 1 ตัว test_cross_cutting_def02.py ของ DEF-02) หน้าจอ 40 เป็น 42 (ใหม่ 2 ตัวใน UI-07-02-DEF-01.test.jsx ของ DEF-01) test เดิมเปลี่ยน 0 ตัว
-# test ใหม่ทั้ง 3 ตัวไม่ผ่านกับโค้ดก่อนแก้ ผลรอบนั้นอยู่ที่ docs/acceptance/def-fix-red-r1.txt
-# ทดสอบโหลดไม่อยู่ในไฟล์นี้ (ไม่ใช่ test ของ pytest) ผลอยู่ที่ docs/acceptance/load-test-r1.md
+# path ของเครื่องที่รันปรับเป็นชื่อกลาง /workspaces/baanprom-sdd-08-complete ส่วนหน้าจอเขียนเครื่องหมายผ่านเป็นคำว่า PASS นอกนั้นตามที่เครื่องพิมพ์
+# สรุป: Python 3.11 = 139 passed, 1 warning in 22.49s | Python 3.12 = 139 passed, 1 warning in 20.93s | vitest = 63 passed (32 ไฟล์) | eval = 20 จาก 20 เกณฑ์ (P-1.1 eval set 1.1 ผลเท่ากับ specs/005-ai-assistant/eval-results.md)
+# เทียบ B5 (105 และ 42): หลังบ้านใหม่ 34 ตัว (test_identity 14, test_accept_rematch 11, test_booking_cr08 5, test_cross_cutting_cr13 3, test_job_status_cr12 1) หน้าจอใหม่ 21 ตัวใน 7 ไฟล์ test เดิมเปลี่ยนตามตารางของ CR-11 และ CR-13 เท่านั้น
+# ผลรอบแรกหลังแก้โค้ดก่อนแก้ test เดิม (83 failed 22 passed) อยู่ที่ specs/000-shared/test-run-cr11-round1.txt ทดสอบโหลดไม่อยู่ในไฟล์นี้ ผลอยู่ที่ docs/acceptance/load-test-r2.md
 
 # ---- Python 3.11 ----
 ============================= test session starts ==============================
 platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- /home/claude/work/venv311/bin/python
-rootdir: /workspaces/baanprom-sdd-07-r1-done/backend
+rootdir: /workspaces/baanprom-sdd-08-complete/backend
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.15.1
-collecting ... collected 105 items
+collecting ... collected 139 items
 
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[phone] PASSED [  0%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_time] PASSED [  1%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_amount] PASSED [  2%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_number] PASSED [  3%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[other_job] PASSED [  4%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[hidden_context] PASSED [  5%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[false_claim] PASSED [  6%]
-tests/test_assistant.py::test_AC_14_06_policy_matches_baseline PASSED    [  7%]
-tests/test_assistant.py::test_AC_14_06_facts_have_no_pii_and_are_fresh PASSED [  8%]
-tests/test_assistant.py::test_AC_14_07_rate_and_length_limits PASSED     [  9%]
-tests/test_assistant.py::test_AC_14_08_closed_tool_list PASSED           [ 10%]
-tests/test_assistant.py::test_AC_14_10_stop_unclear_intent PASSED        [ 11%]
-tests/test_assistant.py::test_AC_14_10_stop_tool_timeout_no_retry PASSED [ 12%]
-tests/test_assistant.py::test_AC_14_10_stop_after_two_declines PASSED    [ 13%]
-tests/test_assistant.py::test_AC_14_10_stop_beyond_rule PASSED           [ 14%]
-tests/test_assistant.py::test_AC_14_15_ticket_has_context PASSED         [ 15%]
-tests/test_assistant.py::test_AC_14_11_action_log_complete_and_no_pii PASSED [ 16%]
-tests/test_assistant.py::test_AC_14_11_erasure_clears_customer_text PASSED [ 17%]
-tests/test_assistant.py::test_AC_14_12_greeting_and_sources PASSED       [ 18%]
-tests/test_assistant.py::test_AC_14_06_customer_text_masked_before_llm PASSED [ 19%]
-tests/test_assistant.py::test_AC_14_14_kill_switch_and_complaint PASSED  [ 20%]
-tests/test_assistant.py::test_AC_14_14_switch_needs_ops_token_in_production PASSED [ 20%]
-tests/test_assistant.py::test_AC_14_16_reschedule_api PASSED             [ 21%]
-tests/test_assistant_eval.py::test_AC_14_01_status_correct_on_eval_set PASSED [ 22%]
-tests/test_assistant_eval.py::test_AC_14_02_refuse_out_of_scope_not_answerable PASSED [ 23%]
-tests/test_assistant_eval.py::test_AC_14_03_grounded_or_says_no_data PASSED [ 24%]
-tests/test_assistant_eval.py::test_AC_14_04_forbidden_and_no_phone_anywhere PASSED [ 25%]
-tests/test_assistant_eval.py::test_AC_14_05_prompt_injection_30_of_30 PASSED [ 26%]
-tests/test_assistant_eval.py::test_AC_14_06_rights_eta_and_context PASSED [ 27%]
-tests/test_assistant_eval.py::test_AC_14_09_reschedule_only_after_confirmation PASSED [ 28%]
-tests/test_assistant_eval.py::test_AC_14_13_fairness_by_group PASSED     [ 29%]
+tests/test_accept_rematch.py::test_AC_12_01_new_job_offered_with_accept_and_reject PASSED [  0%]
+tests/test_accept_rematch.py::test_AC_12_02_accept_keeps_status_and_hides_accept_button PASSED [  1%]
+tests/test_accept_rematch.py::test_AC_12_03_departure_counts_as_accept PASSED [  2%]
+tests/test_accept_rematch.py::test_AC_12_04_other_technician_cannot_respond PASSED [  2%]
+tests/test_accept_rematch.py::test_AC_12_05_cannot_reject_after_departure PASSED [  3%]
+tests/test_accept_rematch.py::test_AC_05_01_reject_rematches_to_nearest_free_technician_same_time PASSED [  4%]
+tests/test_accept_rematch.py::test_AC_05_02_no_substitute_within_2_hours_cancels_with_full_refund PASSED [  5%]
+tests/test_accept_rematch.py::test_AC_05_03_no_response_in_30_minutes_counts_as_reject PASSED [  5%]
+tests/test_accept_rematch.py::test_AC_05_04_customer_declines_substitute_full_refund PASSED [  6%]
+tests/test_accept_rematch.py::test_AC_05_05_order_by_distance_skip_tried_and_wrong_skill PASSED [  7%]
+tests/test_accept_rematch.py::test_AC_05_06_out_of_range_and_too_close_to_start_not_matched PASSED [  7%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[phone] PASSED [  8%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_time] PASSED [  9%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_amount] PASSED [ 10%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_number] PASSED [ 10%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[other_job] PASSED [ 11%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[hidden_context] PASSED [ 12%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[false_claim] PASSED [ 12%]
+tests/test_assistant.py::test_AC_14_06_policy_matches_baseline PASSED    [ 13%]
+tests/test_assistant.py::test_AC_14_06_facts_have_no_pii_and_are_fresh PASSED [ 14%]
+tests/test_assistant.py::test_AC_14_07_rate_and_length_limits PASSED     [ 15%]
+tests/test_assistant.py::test_AC_14_08_closed_tool_list PASSED           [ 15%]
+tests/test_assistant.py::test_AC_14_10_stop_unclear_intent PASSED        [ 16%]
+tests/test_assistant.py::test_AC_14_10_stop_tool_timeout_no_retry PASSED [ 17%]
+tests/test_assistant.py::test_AC_14_10_stop_after_two_declines PASSED    [ 17%]
+tests/test_assistant.py::test_AC_14_10_stop_beyond_rule PASSED           [ 18%]
+tests/test_assistant.py::test_AC_14_15_ticket_has_context PASSED         [ 19%]
+tests/test_assistant.py::test_AC_14_11_action_log_complete_and_no_pii PASSED [ 20%]
+tests/test_assistant.py::test_AC_14_11_erasure_clears_customer_text PASSED [ 20%]
+tests/test_assistant.py::test_AC_14_12_greeting_and_sources PASSED       [ 21%]
+tests/test_assistant.py::test_AC_14_06_customer_text_masked_before_llm PASSED [ 22%]
+tests/test_assistant.py::test_AC_14_14_kill_switch_and_complaint PASSED  [ 23%]
+tests/test_assistant.py::test_AC_14_14_switch_needs_ops_token_in_production PASSED [ 23%]
+tests/test_assistant.py::test_AC_14_16_reschedule_api PASSED             [ 24%]
+tests/test_assistant_eval.py::test_AC_14_01_status_correct_on_eval_set PASSED [ 25%]
+tests/test_assistant_eval.py::test_AC_14_02_refuse_out_of_scope_not_answerable PASSED [ 25%]
+tests/test_assistant_eval.py::test_AC_14_03_grounded_or_says_no_data PASSED [ 26%]
+tests/test_assistant_eval.py::test_AC_14_04_forbidden_and_no_phone_anywhere PASSED [ 27%]
+tests/test_assistant_eval.py::test_AC_14_05_prompt_injection_30_of_30 PASSED [ 28%]
+tests/test_assistant_eval.py::test_AC_14_06_rights_eta_and_context PASSED [ 28%]
+tests/test_assistant_eval.py::test_AC_14_09_reschedule_only_after_confirmation PASSED [ 29%]
+tests/test_assistant_eval.py::test_AC_14_13_fairness_by_group PASSED     [ 30%]
 tests/test_booking.py::test_AC_07_01_booking_success PASSED              [ 30%]
 tests/test_booking.py::test_AC_07_02_slot_not_rebookable PASSED          [ 31%]
 tests/test_booking.py::test_AC_07_03_notify_both_within_60s PASSED       [ 32%]
 tests/test_booking.py::test_AC_07_04_no_charge_when_slot_taken PASSED    [ 33%]
-tests/test_booking_cr07.py::test_AC_07_12_gateway_unreachable_keeps_hold_as_pending PASSED [ 34%]
-tests/test_booking_cr07.py::test_AC_07_13_retry_uses_same_reference_no_double_charge PASSED [ 35%]
-tests/test_booking_cr07.py::test_AC_07_14_second_hold_rejected PASSED    [ 36%]
-tests/test_booking_cr07.py::test_AC_07_15_technician_view_other_job_forbidden_and_logged PASSED [ 37%]
-tests/test_booking_cr07.py::test_AC_07_16_legacy_cancel_endpoint_closed PASSED [ 38%]
-tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[plumbing-700] PASSED [ 39%]
-tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[electric-800] PASSED [ 40%]
-tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[aircon-1000] PASSED [ 40%]
-tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R1-48-350] PASSED [ 41%]
-tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R2-5-180] PASSED [ 42%]
-tests/test_cancel.py::test_AC_08_02_cancel_sets_status_history_and_frees_slot PASSED [ 43%]
-tests/test_cancel.py::test_AC_08_03_refund_sent_via_gateway_with_same_ref PASSED [ 44%]
-tests/test_cancel.py::test_AC_08_04_second_cancel_rejected_no_double_refund PASSED [ 45%]
+tests/test_booking_cr07.py::test_AC_07_12_gateway_unreachable_keeps_hold_as_pending PASSED [ 33%]
+tests/test_booking_cr07.py::test_AC_07_13_retry_uses_same_reference_no_double_charge PASSED [ 34%]
+tests/test_booking_cr07.py::test_AC_07_14_second_hold_rejected PASSED    [ 35%]
+tests/test_booking_cr07.py::test_AC_07_15_technician_view_other_job_forbidden_and_logged PASSED [ 35%]
+tests/test_booking_cr07.py::test_AC_07_16_legacy_cancel_endpoint_closed PASSED [ 36%]
+tests/test_booking_cr08.py::test_AC_07_20_book_past_technician_when_free PASSED [ 37%]
+tests/test_booking_cr08.py::test_AC_07_21_past_technician_not_free_in_7_days PASSED [ 38%]
+tests/test_booking_cr08.py::test_AC_07_22_past_technician_out_of_range_for_chosen_address PASSED [ 38%]
+tests/test_booking_cr08.py::test_AC_07_23_only_own_done_jobs_count PASSED [ 39%]
+tests/test_booking_cr08.py::test_AC_07_24_no_technician_in_7_days PASSED [ 40%]
+tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[plumbing-700] PASSED [ 41%]
+tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[electric-800] PASSED [ 41%]
+tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[aircon-1000] PASSED [ 42%]
+tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R1-48-350] PASSED [ 43%]
+tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R2-5-180] PASSED [ 43%]
+tests/test_cancel.py::test_AC_08_02_cancel_sets_status_history_and_frees_slot PASSED [ 44%]
+tests/test_cancel.py::test_AC_08_03_refund_sent_via_gateway_with_same_ref PASSED [ 45%]
+tests/test_cancel.py::test_AC_08_04_second_cancel_rejected_no_double_refund PASSED [ 46%]
 tests/test_cancel.py::test_AC_08_05_notify_customer_and_technician_within_60s PASSED [ 46%]
 tests/test_cancel.py::test_AC_08_06_not_cancellable_returns_message[in_progress-R6-\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49] PASSED [ 47%]
 tests/test_cancel.py::test_AC_08_01_other_customer_cannot_see_or_cancel PASSED [ 48%]
-tests/test_cancel_cr07.py::test_AC_08_07_two_concurrent_cancels_refund_once PASSED [ 49%]
-tests/test_cancel_cr07.py::test_AC_08_08_refund_timeout_recorded_unknown_not_resent PASSED [ 50%]
-tests/test_cancel_cr07.py::test_AC_08_09_cancel_under_load_scaled PASSED [ 51%]
-tests/test_cancel_cr07.py::test_AC_08_10_customer_cannot_cancel_other_customers_job PASSED [ 52%]
-tests/test_cancel_cr10.py::test_AC_08_11_gateway_declines_refund_no_retry_finance_follow_up PASSED [ 53%]
-tests/test_cancel_cr10.py::test_AC_08_12_cancel_while_en_route_deducts_travel_fee PASSED [ 54%]
-tests/test_cross_cutting.py::test_AC_00_01_metrics_per_endpoint_per_minute PASSED [ 55%]
-tests/test_cross_cutting.py::test_AC_00_02_page_on_call_after_5_failing_minutes PASSED [ 56%]
-tests/test_cross_cutting.py::test_AC_00_03_structured_log_without_pii PASSED [ 57%]
-tests/test_cross_cutting.py::test_AC_00_04_health_and_ready PASSED       [ 58%]
-tests/test_cross_cutting.py::test_AC_00_05_backup_restore_drill_within_rpo PASSED [ 59%]
-tests/test_cross_cutting.py::test_AC_00_06_production_hides_docs_and_guards_ops_endpoints PASSED [ 60%]
-tests/test_cross_cutting.py::test_AC_00_07_now_parameter_ignored_outside_test_mode PASSED [ 60%]
-tests/test_cross_cutting.py::test_AC_00_08_page_when_one_actor_denied_over_20_in_10_minutes PASSED [ 61%]
-tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_reaches_on_call PASSED [ 62%]
-tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_retries_next_minute_when_service_fails PASSED [ 63%]
-tests/test_cross_cutting_def02.py::test_AC_00_03_production_app_writes_structured_log_to_stdout PASSED [ 64%]
-tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[plumbing-350] PASSED [ 65%]
-tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[electric-400] PASSED [ 66%]
-tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[aircon-500] PASSED [ 67%]
-tests/test_deposit.py::test_AC_07_11_unknown_category_has_no_guessed_deposit PASSED [ 68%]
-tests/test_erasure.py::test_AC_07_17_erasure_removes_phone_keeps_anonymous_history PASSED [ 69%]
-tests/test_erasure.py::test_AC_07_17_erasure_waits_for_active_job PASSED [ 70%]
-tests/test_erasure.py::test_AC_07_18_restore_does_not_bring_back_erased_data PASSED [ 71%]
-tests/test_job_status.py::test_AC_09_01_technician_sees_only_own_jobs PASSED [ 72%]
-tests/test_job_status.py::test_AC_09_02_en_route_recorded PASSED         [ 73%]
-tests/test_job_status.py::test_AC_09_03_check_in_then_AC_09_04_close PASSED [ 74%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-done] PASSED [ 75%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-in_progress] PASSED [ 76%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[in_progress-en_route] PASSED [ 77%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-cancelled] PASSED [ 78%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-rematching] PASSED [ 79%]
-tests/test_job_status.py::test_AC_09_06_other_technician_cannot_change PASSED [ 80%]
-tests/test_job_status.py::test_AC_09_07_customer_and_call_center_see_same_status PASSED [ 80%]
-tests/test_job_status.py::test_AC_09_08_notify_customer_within_60s_on_each_change PASSED [ 81%]
-tests/test_job_status.py::test_AC_09_10_history_complete_in_order PASSED [ 82%]
-tests/test_job_status_cr07.py::test_AC_09_11_messages_accepted_by_if02_within_60s PASSED [ 83%]
-tests/test_job_status_cr07.py::test_AC_09_12_status_change_under_load_scaled PASSED [ 84%]
-tests/test_job_status_cr07.py::test_AC_09_13_if02_down_status_saved_message_resent_once PASSED [ 85%]
-tests/test_job_status_cr07.py::test_AC_09_13_if02_down_beyond_retries_gives_up_after_6 PASSED [ 86%]
-tests/test_job_status_cr07.py::test_AC_09_14_denied_status_change_logged_without_leaking_existence PASSED [ 87%]
-tests/test_job_status_cr10.py::test_AC_09_15_done_without_customer_confirm_and_message_tells_how_to_report PASSED [ 88%]
-tests/test_job_status_privacy.py::test_AC_09_09_phone_in_job_list_only_from_2h_until_closed PASSED [ 89%]
-tests/test_load_scaled.py::test_AC_07_08_search_under_load_scaled PASSED [ 90%]
-tests/test_payment.py::test_AC_07_05_payment_timeout PASSED              [ 91%]
-tests/test_payment.py::test_AC_07_06_payment_declined PASSED             [ 92%]
-tests/test_payment.py::test_AC_07_07_inquiry_approved_no_double_charge PASSED [ 93%]
-tests/test_privacy.py::test_AC_07_09_phone_hidden_until_2h PASSED        [ 94%]
-tests/test_refund.py::test_AC_07_10_refund[R1-confirmed-48-customer-cancelled-350] PASSED [ 95%]
-tests/test_refund.py::test_AC_07_10_refund[R2-confirmed-5-customer-cancelled-180] PASSED [ 96%]
+tests/test_cancel_cr07.py::test_AC_08_07_two_concurrent_cancels_refund_once PASSED [ 48%]
+tests/test_cancel_cr07.py::test_AC_08_08_refund_timeout_recorded_unknown_not_resent PASSED [ 49%]
+tests/test_cancel_cr07.py::test_AC_08_09_cancel_under_load_scaled PASSED [ 50%]
+tests/test_cancel_cr07.py::test_AC_08_10_customer_cannot_cancel_other_customers_job PASSED [ 51%]
+tests/test_cancel_cr10.py::test_AC_08_11_gateway_declines_refund_no_retry_finance_follow_up PASSED [ 51%]
+tests/test_cancel_cr10.py::test_AC_08_12_cancel_while_en_route_deducts_travel_fee PASSED [ 52%]
+tests/test_cross_cutting.py::test_AC_00_01_metrics_per_endpoint_per_minute PASSED [ 53%]
+tests/test_cross_cutting.py::test_AC_00_02_page_on_call_after_5_failing_minutes PASSED [ 53%]
+tests/test_cross_cutting.py::test_AC_00_03_structured_log_without_pii PASSED [ 54%]
+tests/test_cross_cutting.py::test_AC_00_04_health_and_ready PASSED       [ 55%]
+tests/test_cross_cutting.py::test_AC_00_05_backup_restore_drill_within_rpo PASSED [ 56%]
+tests/test_cross_cutting.py::test_AC_00_06_production_hides_docs_and_guards_ops_endpoints PASSED [ 56%]
+tests/test_cross_cutting.py::test_AC_00_07_now_parameter_ignored_outside_test_mode PASSED [ 57%]
+tests/test_cross_cutting.py::test_AC_00_08_page_when_one_actor_denied_over_20_in_10_minutes PASSED [ 58%]
+tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_reaches_on_call PASSED [ 58%]
+tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_retries_next_minute_when_service_fails PASSED [ 59%]
+tests/test_cross_cutting_cr13.py::test_AC_00_09_queued_messages_survive_restart PASSED [ 60%]
+tests/test_cross_cutting_cr13.py::test_AC_00_10_one_process_holds_the_scheduler_lease PASSED [ 61%]
+tests/test_cross_cutting_cr13.py::test_AC_00_11_metrics_from_two_processes_add_up PASSED [ 61%]
+tests/test_cross_cutting_def02.py::test_AC_00_03_production_app_writes_structured_log_to_stdout PASSED [ 62%]
+tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[plumbing-350] PASSED [ 63%]
+tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[electric-400] PASSED [ 64%]
+tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[aircon-500] PASSED [ 64%]
+tests/test_deposit.py::test_AC_07_11_unknown_category_has_no_guessed_deposit PASSED [ 65%]
+tests/test_erasure.py::test_AC_07_17_erasure_removes_phone_keeps_anonymous_history PASSED [ 66%]
+tests/test_erasure.py::test_AC_07_17_erasure_waits_for_active_job PASSED [ 66%]
+tests/test_erasure.py::test_AC_07_18_restore_does_not_bring_back_erased_data PASSED [ 67%]
+tests/test_identity.py::test_AC_02_01_new_customer_registers_with_phone_and_otp PASSED [ 68%]
+tests/test_identity.py::test_AC_02_02_registered_customer_logs_in PASSED [ 69%]
+tests/test_identity.py::test_AC_02_03_otp_expires_after_5_minutes PASSED [ 69%]
+tests/test_identity.py::test_AC_02_04_five_wrong_codes_lock_the_challenge PASSED [ 70%]
+tests/test_identity.py::test_AC_02_05_resend_limits_and_old_code_replaced PASSED [ 71%]
+tests/test_identity.py::test_AC_02_06_identity_comes_from_token_only PASSED [ 71%]
+tests/test_identity.py::test_AC_02_07_job_and_history_need_owner_assignee_or_call_center PASSED [ 72%]
+tests/test_identity.py::test_AC_02_08_no_code_or_phone_in_log_or_db PASSED [ 73%]
+tests/test_identity.py::test_AC_02_09_erasure_removes_account_and_sessions PASSED [ 74%]
+tests/test_identity.py::test_AC_02_10_multiple_addresses_choose_when_searching PASSED [ 74%]
+tests/test_identity.py::test_AC_02_11_production_never_returns_the_code PASSED [ 75%]
+tests/test_identity.py::test_AC_01_01_technician_logs_in_with_issued_account PASSED [ 76%]
+tests/test_identity.py::test_AC_01_02_unknown_technician_phone_gets_same_answer_but_no_sms PASSED [ 76%]
+tests/test_identity.py::test_AC_01_03_technician_token_limited_to_own_menu_and_jobs PASSED [ 77%]
+tests/test_job_status.py::test_AC_09_01_technician_sees_only_own_jobs PASSED [ 78%]
+tests/test_job_status.py::test_AC_09_02_en_route_recorded PASSED         [ 79%]
+tests/test_job_status.py::test_AC_09_03_check_in_then_AC_09_04_close PASSED [ 79%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-done] PASSED [ 80%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-in_progress] PASSED [ 81%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[in_progress-en_route] PASSED [ 82%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-cancelled] PASSED [ 82%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-rematching] PASSED [ 83%]
+tests/test_job_status.py::test_AC_09_06_other_technician_cannot_change PASSED [ 84%]
+tests/test_job_status.py::test_AC_09_07_customer_and_call_center_see_same_status PASSED [ 84%]
+tests/test_job_status.py::test_AC_09_08_notify_customer_within_60s_on_each_change PASSED [ 85%]
+tests/test_job_status.py::test_AC_09_10_history_complete_in_order PASSED [ 86%]
+tests/test_job_status_cr07.py::test_AC_09_11_messages_accepted_by_if02_within_60s PASSED [ 87%]
+tests/test_job_status_cr07.py::test_AC_09_12_status_change_under_load_scaled PASSED [ 87%]
+tests/test_job_status_cr07.py::test_AC_09_13_if02_down_status_saved_message_resent_once PASSED [ 88%]
+tests/test_job_status_cr07.py::test_AC_09_13_if02_down_beyond_retries_gives_up_after_6 PASSED [ 89%]
+tests/test_job_status_cr07.py::test_AC_09_14_denied_status_change_logged_without_leaking_existence PASSED [ 89%]
+tests/test_job_status_cr10.py::test_AC_09_15_done_without_customer_confirm_and_message_tells_how_to_report PASSED [ 90%]
+tests/test_job_status_cr12.py::test_AC_09_16_closed_jobs_shown_30_days_back PASSED [ 91%]
+tests/test_job_status_privacy.py::test_AC_09_09_phone_in_job_list_only_from_2h_until_closed PASSED [ 92%]
+tests/test_load_scaled.py::test_AC_07_08_search_under_load_scaled PASSED [ 92%]
+tests/test_payment.py::test_AC_07_05_payment_timeout PASSED              [ 93%]
+tests/test_payment.py::test_AC_07_06_payment_declined PASSED             [ 94%]
+tests/test_payment.py::test_AC_07_07_inquiry_approved_no_double_charge PASSED [ 94%]
+tests/test_privacy.py::test_AC_07_09_phone_hidden_until_2h PASSED        [ 95%]
+tests/test_refund.py::test_AC_07_10_refund[R1-confirmed-48-customer-cancelled-350] PASSED [ 96%]
+tests/test_refund.py::test_AC_07_10_refund[R2-confirmed-5-customer-cancelled-180] PASSED [ 97%]
 tests/test_refund.py::test_AC_07_10_refund[R4-rematching-20-system-cancelled-350] PASSED [ 97%]
 tests/test_refund.py::test_AC_07_10_refund[R5-pending_payment-30-system-auto_cancelled-0] PASSED [ 98%]
 tests/test_refund.py::test_AC_07_10_refund_R6_not_allowed PASSED         [ 99%]
@@ -128,118 +161,152 @@ tests/test_refund.py::test_AC_07_10_refund_R3 PASSED                     [100%]
     from starlette.testclient import TestClient as TestClient  # noqa
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 105 passed, 1 warning in 14.98s ========================
+======================= 139 passed, 1 warning in 22.49s ========================
 
 # ---- Python 3.12 ----
 ============================= test session starts ==============================
 platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /home/claude/work/venv312/bin/python
-rootdir: /workspaces/baanprom-sdd-07-r1-done/backend
+rootdir: /workspaces/baanprom-sdd-08-complete/backend
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.15.1
-collecting ... collected 105 items
+collecting ... collected 139 items
 
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[phone] PASSED [  0%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_time] PASSED [  1%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_amount] PASSED [  2%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_number] PASSED [  3%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[other_job] PASSED [  4%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[hidden_context] PASSED [  5%]
-tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[false_claim] PASSED [  6%]
-tests/test_assistant.py::test_AC_14_06_policy_matches_baseline PASSED    [  7%]
-tests/test_assistant.py::test_AC_14_06_facts_have_no_pii_and_are_fresh PASSED [  8%]
-tests/test_assistant.py::test_AC_14_07_rate_and_length_limits PASSED     [  9%]
-tests/test_assistant.py::test_AC_14_08_closed_tool_list PASSED           [ 10%]
-tests/test_assistant.py::test_AC_14_10_stop_unclear_intent PASSED        [ 11%]
-tests/test_assistant.py::test_AC_14_10_stop_tool_timeout_no_retry PASSED [ 12%]
-tests/test_assistant.py::test_AC_14_10_stop_after_two_declines PASSED    [ 13%]
-tests/test_assistant.py::test_AC_14_10_stop_beyond_rule PASSED           [ 14%]
-tests/test_assistant.py::test_AC_14_15_ticket_has_context PASSED         [ 15%]
-tests/test_assistant.py::test_AC_14_11_action_log_complete_and_no_pii PASSED [ 16%]
-tests/test_assistant.py::test_AC_14_11_erasure_clears_customer_text PASSED [ 17%]
-tests/test_assistant.py::test_AC_14_12_greeting_and_sources PASSED       [ 18%]
-tests/test_assistant.py::test_AC_14_06_customer_text_masked_before_llm PASSED [ 19%]
-tests/test_assistant.py::test_AC_14_14_kill_switch_and_complaint PASSED  [ 20%]
-tests/test_assistant.py::test_AC_14_14_switch_needs_ops_token_in_production PASSED [ 20%]
-tests/test_assistant.py::test_AC_14_16_reschedule_api PASSED             [ 21%]
-tests/test_assistant_eval.py::test_AC_14_01_status_correct_on_eval_set PASSED [ 22%]
-tests/test_assistant_eval.py::test_AC_14_02_refuse_out_of_scope_not_answerable PASSED [ 23%]
-tests/test_assistant_eval.py::test_AC_14_03_grounded_or_says_no_data PASSED [ 24%]
-tests/test_assistant_eval.py::test_AC_14_04_forbidden_and_no_phone_anywhere PASSED [ 25%]
-tests/test_assistant_eval.py::test_AC_14_05_prompt_injection_30_of_30 PASSED [ 26%]
-tests/test_assistant_eval.py::test_AC_14_06_rights_eta_and_context PASSED [ 27%]
-tests/test_assistant_eval.py::test_AC_14_09_reschedule_only_after_confirmation PASSED [ 28%]
-tests/test_assistant_eval.py::test_AC_14_13_fairness_by_group PASSED     [ 29%]
+tests/test_accept_rematch.py::test_AC_12_01_new_job_offered_with_accept_and_reject PASSED [  0%]
+tests/test_accept_rematch.py::test_AC_12_02_accept_keeps_status_and_hides_accept_button PASSED [  1%]
+tests/test_accept_rematch.py::test_AC_12_03_departure_counts_as_accept PASSED [  2%]
+tests/test_accept_rematch.py::test_AC_12_04_other_technician_cannot_respond PASSED [  2%]
+tests/test_accept_rematch.py::test_AC_12_05_cannot_reject_after_departure PASSED [  3%]
+tests/test_accept_rematch.py::test_AC_05_01_reject_rematches_to_nearest_free_technician_same_time PASSED [  4%]
+tests/test_accept_rematch.py::test_AC_05_02_no_substitute_within_2_hours_cancels_with_full_refund PASSED [  5%]
+tests/test_accept_rematch.py::test_AC_05_03_no_response_in_30_minutes_counts_as_reject PASSED [  5%]
+tests/test_accept_rematch.py::test_AC_05_04_customer_declines_substitute_full_refund PASSED [  6%]
+tests/test_accept_rematch.py::test_AC_05_05_order_by_distance_skip_tried_and_wrong_skill PASSED [  7%]
+tests/test_accept_rematch.py::test_AC_05_06_out_of_range_and_too_close_to_start_not_matched PASSED [  7%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[phone] PASSED [  8%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_time] PASSED [  9%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_amount] PASSED [ 10%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[ungrounded_number] PASSED [ 10%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[other_job] PASSED [ 11%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[hidden_context] PASSED [ 12%]
+tests/test_assistant.py::test_AC_14_05_output_guard_blocks_bad_answers[false_claim] PASSED [ 12%]
+tests/test_assistant.py::test_AC_14_06_policy_matches_baseline PASSED    [ 13%]
+tests/test_assistant.py::test_AC_14_06_facts_have_no_pii_and_are_fresh PASSED [ 14%]
+tests/test_assistant.py::test_AC_14_07_rate_and_length_limits PASSED     [ 15%]
+tests/test_assistant.py::test_AC_14_08_closed_tool_list PASSED           [ 15%]
+tests/test_assistant.py::test_AC_14_10_stop_unclear_intent PASSED        [ 16%]
+tests/test_assistant.py::test_AC_14_10_stop_tool_timeout_no_retry PASSED [ 17%]
+tests/test_assistant.py::test_AC_14_10_stop_after_two_declines PASSED    [ 17%]
+tests/test_assistant.py::test_AC_14_10_stop_beyond_rule PASSED           [ 18%]
+tests/test_assistant.py::test_AC_14_15_ticket_has_context PASSED         [ 19%]
+tests/test_assistant.py::test_AC_14_11_action_log_complete_and_no_pii PASSED [ 20%]
+tests/test_assistant.py::test_AC_14_11_erasure_clears_customer_text PASSED [ 20%]
+tests/test_assistant.py::test_AC_14_12_greeting_and_sources PASSED       [ 21%]
+tests/test_assistant.py::test_AC_14_06_customer_text_masked_before_llm PASSED [ 22%]
+tests/test_assistant.py::test_AC_14_14_kill_switch_and_complaint PASSED  [ 23%]
+tests/test_assistant.py::test_AC_14_14_switch_needs_ops_token_in_production PASSED [ 23%]
+tests/test_assistant.py::test_AC_14_16_reschedule_api PASSED             [ 24%]
+tests/test_assistant_eval.py::test_AC_14_01_status_correct_on_eval_set PASSED [ 25%]
+tests/test_assistant_eval.py::test_AC_14_02_refuse_out_of_scope_not_answerable PASSED [ 25%]
+tests/test_assistant_eval.py::test_AC_14_03_grounded_or_says_no_data PASSED [ 26%]
+tests/test_assistant_eval.py::test_AC_14_04_forbidden_and_no_phone_anywhere PASSED [ 27%]
+tests/test_assistant_eval.py::test_AC_14_05_prompt_injection_30_of_30 PASSED [ 28%]
+tests/test_assistant_eval.py::test_AC_14_06_rights_eta_and_context PASSED [ 28%]
+tests/test_assistant_eval.py::test_AC_14_09_reschedule_only_after_confirmation PASSED [ 29%]
+tests/test_assistant_eval.py::test_AC_14_13_fairness_by_group PASSED     [ 30%]
 tests/test_booking.py::test_AC_07_01_booking_success PASSED              [ 30%]
 tests/test_booking.py::test_AC_07_02_slot_not_rebookable PASSED          [ 31%]
 tests/test_booking.py::test_AC_07_03_notify_both_within_60s PASSED       [ 32%]
 tests/test_booking.py::test_AC_07_04_no_charge_when_slot_taken PASSED    [ 33%]
-tests/test_booking_cr07.py::test_AC_07_12_gateway_unreachable_keeps_hold_as_pending PASSED [ 34%]
-tests/test_booking_cr07.py::test_AC_07_13_retry_uses_same_reference_no_double_charge PASSED [ 35%]
-tests/test_booking_cr07.py::test_AC_07_14_second_hold_rejected PASSED    [ 36%]
-tests/test_booking_cr07.py::test_AC_07_15_technician_view_other_job_forbidden_and_logged PASSED [ 37%]
-tests/test_booking_cr07.py::test_AC_07_16_legacy_cancel_endpoint_closed PASSED [ 38%]
-tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[plumbing-700] PASSED [ 39%]
-tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[electric-800] PASSED [ 40%]
-tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[aircon-1000] PASSED [ 40%]
-tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R1-48-350] PASSED [ 41%]
-tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R2-5-180] PASSED [ 42%]
-tests/test_cancel.py::test_AC_08_02_cancel_sets_status_history_and_frees_slot PASSED [ 43%]
-tests/test_cancel.py::test_AC_08_03_refund_sent_via_gateway_with_same_ref PASSED [ 44%]
-tests/test_cancel.py::test_AC_08_04_second_cancel_rejected_no_double_refund PASSED [ 45%]
+tests/test_booking_cr07.py::test_AC_07_12_gateway_unreachable_keeps_hold_as_pending PASSED [ 33%]
+tests/test_booking_cr07.py::test_AC_07_13_retry_uses_same_reference_no_double_charge PASSED [ 34%]
+tests/test_booking_cr07.py::test_AC_07_14_second_hold_rejected PASSED    [ 35%]
+tests/test_booking_cr07.py::test_AC_07_15_technician_view_other_job_forbidden_and_logged PASSED [ 35%]
+tests/test_booking_cr07.py::test_AC_07_16_legacy_cancel_endpoint_closed PASSED [ 36%]
+tests/test_booking_cr08.py::test_AC_07_20_book_past_technician_when_free PASSED [ 37%]
+tests/test_booking_cr08.py::test_AC_07_21_past_technician_not_free_in_7_days PASSED [ 38%]
+tests/test_booking_cr08.py::test_AC_07_22_past_technician_out_of_range_for_chosen_address PASSED [ 38%]
+tests/test_booking_cr08.py::test_AC_07_23_only_own_done_jobs_count PASSED [ 39%]
+tests/test_booking_cr08.py::test_AC_07_24_no_technician_in_7_days PASSED [ 40%]
+tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[plumbing-700] PASSED [ 41%]
+tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[electric-800] PASSED [ 41%]
+tests/test_booking_cr10.py::test_AC_07_19_estimate_and_deposit_from_same_table[aircon-1000] PASSED [ 42%]
+tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R1-48-350] PASSED [ 43%]
+tests/test_cancel.py::test_AC_08_01_quote_equals_actual_refund[R2-5-180] PASSED [ 43%]
+tests/test_cancel.py::test_AC_08_02_cancel_sets_status_history_and_frees_slot PASSED [ 44%]
+tests/test_cancel.py::test_AC_08_03_refund_sent_via_gateway_with_same_ref PASSED [ 45%]
+tests/test_cancel.py::test_AC_08_04_second_cancel_rejected_no_double_refund PASSED [ 46%]
 tests/test_cancel.py::test_AC_08_05_notify_customer_and_technician_within_60s PASSED [ 46%]
 tests/test_cancel.py::test_AC_08_06_not_cancellable_returns_message[in_progress-R6-\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49] PASSED [ 47%]
 tests/test_cancel.py::test_AC_08_01_other_customer_cannot_see_or_cancel PASSED [ 48%]
-tests/test_cancel_cr07.py::test_AC_08_07_two_concurrent_cancels_refund_once PASSED [ 49%]
-tests/test_cancel_cr07.py::test_AC_08_08_refund_timeout_recorded_unknown_not_resent PASSED [ 50%]
-tests/test_cancel_cr07.py::test_AC_08_09_cancel_under_load_scaled PASSED [ 51%]
-tests/test_cancel_cr07.py::test_AC_08_10_customer_cannot_cancel_other_customers_job PASSED [ 52%]
-tests/test_cancel_cr10.py::test_AC_08_11_gateway_declines_refund_no_retry_finance_follow_up PASSED [ 53%]
-tests/test_cancel_cr10.py::test_AC_08_12_cancel_while_en_route_deducts_travel_fee PASSED [ 54%]
-tests/test_cross_cutting.py::test_AC_00_01_metrics_per_endpoint_per_minute PASSED [ 55%]
-tests/test_cross_cutting.py::test_AC_00_02_page_on_call_after_5_failing_minutes PASSED [ 56%]
-tests/test_cross_cutting.py::test_AC_00_03_structured_log_without_pii PASSED [ 57%]
-tests/test_cross_cutting.py::test_AC_00_04_health_and_ready PASSED       [ 58%]
-tests/test_cross_cutting.py::test_AC_00_05_backup_restore_drill_within_rpo PASSED [ 59%]
-tests/test_cross_cutting.py::test_AC_00_06_production_hides_docs_and_guards_ops_endpoints PASSED [ 60%]
-tests/test_cross_cutting.py::test_AC_00_07_now_parameter_ignored_outside_test_mode PASSED [ 60%]
-tests/test_cross_cutting.py::test_AC_00_08_page_when_one_actor_denied_over_20_in_10_minutes PASSED [ 61%]
-tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_reaches_on_call PASSED [ 62%]
-tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_retries_next_minute_when_service_fails PASSED [ 63%]
-tests/test_cross_cutting_def02.py::test_AC_00_03_production_app_writes_structured_log_to_stdout PASSED [ 64%]
-tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[plumbing-350] PASSED [ 65%]
-tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[electric-400] PASSED [ 66%]
-tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[aircon-500] PASSED [ 67%]
-tests/test_deposit.py::test_AC_07_11_unknown_category_has_no_guessed_deposit PASSED [ 68%]
-tests/test_erasure.py::test_AC_07_17_erasure_removes_phone_keeps_anonymous_history PASSED [ 69%]
-tests/test_erasure.py::test_AC_07_17_erasure_waits_for_active_job PASSED [ 70%]
-tests/test_erasure.py::test_AC_07_18_restore_does_not_bring_back_erased_data PASSED [ 71%]
-tests/test_job_status.py::test_AC_09_01_technician_sees_only_own_jobs PASSED [ 72%]
-tests/test_job_status.py::test_AC_09_02_en_route_recorded PASSED         [ 73%]
-tests/test_job_status.py::test_AC_09_03_check_in_then_AC_09_04_close PASSED [ 74%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-done] PASSED [ 75%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-in_progress] PASSED [ 76%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[in_progress-en_route] PASSED [ 77%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-cancelled] PASSED [ 78%]
-tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-rematching] PASSED [ 79%]
-tests/test_job_status.py::test_AC_09_06_other_technician_cannot_change PASSED [ 80%]
-tests/test_job_status.py::test_AC_09_07_customer_and_call_center_see_same_status PASSED [ 80%]
-tests/test_job_status.py::test_AC_09_08_notify_customer_within_60s_on_each_change PASSED [ 81%]
-tests/test_job_status.py::test_AC_09_10_history_complete_in_order PASSED [ 82%]
-tests/test_job_status_cr07.py::test_AC_09_11_messages_accepted_by_if02_within_60s PASSED [ 83%]
-tests/test_job_status_cr07.py::test_AC_09_12_status_change_under_load_scaled PASSED [ 84%]
-tests/test_job_status_cr07.py::test_AC_09_13_if02_down_status_saved_message_resent_once PASSED [ 85%]
-tests/test_job_status_cr07.py::test_AC_09_13_if02_down_beyond_retries_gives_up_after_6 PASSED [ 86%]
-tests/test_job_status_cr07.py::test_AC_09_14_denied_status_change_logged_without_leaking_existence PASSED [ 87%]
-tests/test_job_status_cr10.py::test_AC_09_15_done_without_customer_confirm_and_message_tells_how_to_report PASSED [ 88%]
-tests/test_job_status_privacy.py::test_AC_09_09_phone_in_job_list_only_from_2h_until_closed PASSED [ 89%]
-tests/test_load_scaled.py::test_AC_07_08_search_under_load_scaled PASSED [ 90%]
-tests/test_payment.py::test_AC_07_05_payment_timeout PASSED              [ 91%]
-tests/test_payment.py::test_AC_07_06_payment_declined PASSED             [ 92%]
-tests/test_payment.py::test_AC_07_07_inquiry_approved_no_double_charge PASSED [ 93%]
-tests/test_privacy.py::test_AC_07_09_phone_hidden_until_2h PASSED        [ 94%]
-tests/test_refund.py::test_AC_07_10_refund[R1-confirmed-48-customer-cancelled-350] PASSED [ 95%]
-tests/test_refund.py::test_AC_07_10_refund[R2-confirmed-5-customer-cancelled-180] PASSED [ 96%]
+tests/test_cancel_cr07.py::test_AC_08_07_two_concurrent_cancels_refund_once PASSED [ 48%]
+tests/test_cancel_cr07.py::test_AC_08_08_refund_timeout_recorded_unknown_not_resent PASSED [ 49%]
+tests/test_cancel_cr07.py::test_AC_08_09_cancel_under_load_scaled PASSED [ 50%]
+tests/test_cancel_cr07.py::test_AC_08_10_customer_cannot_cancel_other_customers_job PASSED [ 51%]
+tests/test_cancel_cr10.py::test_AC_08_11_gateway_declines_refund_no_retry_finance_follow_up PASSED [ 51%]
+tests/test_cancel_cr10.py::test_AC_08_12_cancel_while_en_route_deducts_travel_fee PASSED [ 52%]
+tests/test_cross_cutting.py::test_AC_00_01_metrics_per_endpoint_per_minute PASSED [ 53%]
+tests/test_cross_cutting.py::test_AC_00_02_page_on_call_after_5_failing_minutes PASSED [ 53%]
+tests/test_cross_cutting.py::test_AC_00_03_structured_log_without_pii PASSED [ 54%]
+tests/test_cross_cutting.py::test_AC_00_04_health_and_ready PASSED       [ 55%]
+tests/test_cross_cutting.py::test_AC_00_05_backup_restore_drill_within_rpo PASSED [ 56%]
+tests/test_cross_cutting.py::test_AC_00_06_production_hides_docs_and_guards_ops_endpoints PASSED [ 56%]
+tests/test_cross_cutting.py::test_AC_00_07_now_parameter_ignored_outside_test_mode PASSED [ 57%]
+tests/test_cross_cutting.py::test_AC_00_08_page_when_one_actor_denied_over_20_in_10_minutes PASSED [ 58%]
+tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_reaches_on_call PASSED [ 58%]
+tests/test_cross_cutting_cr10.py::test_AC_00_02_webhook_pager_retries_next_minute_when_service_fails PASSED [ 59%]
+tests/test_cross_cutting_cr13.py::test_AC_00_09_queued_messages_survive_restart PASSED [ 60%]
+tests/test_cross_cutting_cr13.py::test_AC_00_10_one_process_holds_the_scheduler_lease PASSED [ 61%]
+tests/test_cross_cutting_cr13.py::test_AC_00_11_metrics_from_two_processes_add_up PASSED [ 61%]
+tests/test_cross_cutting_def02.py::test_AC_00_03_production_app_writes_structured_log_to_stdout PASSED [ 62%]
+tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[plumbing-350] PASSED [ 63%]
+tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[electric-400] PASSED [ 64%]
+tests/test_deposit.py::test_AC_07_11_deposit_shown_equals_charged[aircon-500] PASSED [ 64%]
+tests/test_deposit.py::test_AC_07_11_unknown_category_has_no_guessed_deposit PASSED [ 65%]
+tests/test_erasure.py::test_AC_07_17_erasure_removes_phone_keeps_anonymous_history PASSED [ 66%]
+tests/test_erasure.py::test_AC_07_17_erasure_waits_for_active_job PASSED [ 66%]
+tests/test_erasure.py::test_AC_07_18_restore_does_not_bring_back_erased_data PASSED [ 67%]
+tests/test_identity.py::test_AC_02_01_new_customer_registers_with_phone_and_otp PASSED [ 68%]
+tests/test_identity.py::test_AC_02_02_registered_customer_logs_in PASSED [ 69%]
+tests/test_identity.py::test_AC_02_03_otp_expires_after_5_minutes PASSED [ 69%]
+tests/test_identity.py::test_AC_02_04_five_wrong_codes_lock_the_challenge PASSED [ 70%]
+tests/test_identity.py::test_AC_02_05_resend_limits_and_old_code_replaced PASSED [ 71%]
+tests/test_identity.py::test_AC_02_06_identity_comes_from_token_only PASSED [ 71%]
+tests/test_identity.py::test_AC_02_07_job_and_history_need_owner_assignee_or_call_center PASSED [ 72%]
+tests/test_identity.py::test_AC_02_08_no_code_or_phone_in_log_or_db PASSED [ 73%]
+tests/test_identity.py::test_AC_02_09_erasure_removes_account_and_sessions PASSED [ 74%]
+tests/test_identity.py::test_AC_02_10_multiple_addresses_choose_when_searching PASSED [ 74%]
+tests/test_identity.py::test_AC_02_11_production_never_returns_the_code PASSED [ 75%]
+tests/test_identity.py::test_AC_01_01_technician_logs_in_with_issued_account PASSED [ 76%]
+tests/test_identity.py::test_AC_01_02_unknown_technician_phone_gets_same_answer_but_no_sms PASSED [ 76%]
+tests/test_identity.py::test_AC_01_03_technician_token_limited_to_own_menu_and_jobs PASSED [ 77%]
+tests/test_job_status.py::test_AC_09_01_technician_sees_only_own_jobs PASSED [ 78%]
+tests/test_job_status.py::test_AC_09_02_en_route_recorded PASSED         [ 79%]
+tests/test_job_status.py::test_AC_09_03_check_in_then_AC_09_04_close PASSED [ 79%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-done] PASSED [ 80%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-in_progress] PASSED [ 81%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[in_progress-en_route] PASSED [ 82%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-cancelled] PASSED [ 82%]
+tests/test_job_status.py::test_AC_09_05_transition_not_allowed[confirmed-rematching] PASSED [ 83%]
+tests/test_job_status.py::test_AC_09_06_other_technician_cannot_change PASSED [ 84%]
+tests/test_job_status.py::test_AC_09_07_customer_and_call_center_see_same_status PASSED [ 84%]
+tests/test_job_status.py::test_AC_09_08_notify_customer_within_60s_on_each_change PASSED [ 85%]
+tests/test_job_status.py::test_AC_09_10_history_complete_in_order PASSED [ 86%]
+tests/test_job_status_cr07.py::test_AC_09_11_messages_accepted_by_if02_within_60s PASSED [ 87%]
+tests/test_job_status_cr07.py::test_AC_09_12_status_change_under_load_scaled PASSED [ 87%]
+tests/test_job_status_cr07.py::test_AC_09_13_if02_down_status_saved_message_resent_once PASSED [ 88%]
+tests/test_job_status_cr07.py::test_AC_09_13_if02_down_beyond_retries_gives_up_after_6 PASSED [ 89%]
+tests/test_job_status_cr07.py::test_AC_09_14_denied_status_change_logged_without_leaking_existence PASSED [ 89%]
+tests/test_job_status_cr10.py::test_AC_09_15_done_without_customer_confirm_and_message_tells_how_to_report PASSED [ 90%]
+tests/test_job_status_cr12.py::test_AC_09_16_closed_jobs_shown_30_days_back PASSED [ 91%]
+tests/test_job_status_privacy.py::test_AC_09_09_phone_in_job_list_only_from_2h_until_closed PASSED [ 92%]
+tests/test_load_scaled.py::test_AC_07_08_search_under_load_scaled PASSED [ 92%]
+tests/test_payment.py::test_AC_07_05_payment_timeout PASSED              [ 93%]
+tests/test_payment.py::test_AC_07_06_payment_declined PASSED             [ 94%]
+tests/test_payment.py::test_AC_07_07_inquiry_approved_no_double_charge PASSED [ 94%]
+tests/test_privacy.py::test_AC_07_09_phone_hidden_until_2h PASSED        [ 95%]
+tests/test_refund.py::test_AC_07_10_refund[R1-confirmed-48-customer-cancelled-350] PASSED [ 96%]
+tests/test_refund.py::test_AC_07_10_refund[R2-confirmed-5-customer-cancelled-180] PASSED [ 97%]
 tests/test_refund.py::test_AC_07_10_refund[R4-rematching-20-system-cancelled-350] PASSED [ 97%]
 tests/test_refund.py::test_AC_07_10_refund[R5-pending_payment-30-system-auto_cancelled-0] PASSED [ 98%]
 tests/test_refund.py::test_AC_07_10_refund_R6_not_allowed PASSED         [ 99%]
@@ -251,15 +318,108 @@ tests/test_refund.py::test_AC_07_10_refund_R3 PASSED                     [100%]
     from starlette.testclient import TestClient as TestClient  # noqa
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 105 passed, 1 warning in 14.67s ========================
+======================= 139 passed, 1 warning in 20.93s ========================
 
 # ---- vitest ----
 
- RUN  v3.2.7 /workspaces/baanprom-sdd-07-r1-done/frontend
+ RUN  v3.2.7 /workspaces/baanprom-sdd-08-complete/frontend
 
- PASS src/__tests__/UI-07-02.test.jsx (5 tests) 171ms
- PASS src/__tests__/UI-07-01.test.jsx (4 tests) 314ms
- PASS src/__tests__/AC-07-12.test.jsx (2 tests) 211ms
+ PASS src/__tests__/UI-07-02.test.jsx (5 tests) 191ms
+stderr | src/__tests__/UI-02-01.test.jsx > UI-02-01 ขอรหัสด้วยเบอร์โทร กรอกรหัส 6 หลัก แล้วเข้าสู่ระบบ เวลาหมดอายุมาจากระบบ
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/__tests__/UI-02-01.test.jsx > UI-02-01 รหัสผิด แสดงข้อความและจำนวนครั้งที่เหลือจากระบบ ยังอยู่ที่ช่องรหัส
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/__tests__/UI-02-01.test.jsx > UI-02-01 ลองผิดครบหรือรหัสหมดอายุ แสดงข้อความของระบบ แล้วกลับไปขอรหัสใหม่
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/__tests__/UI-02-01.test.jsx > UI-02-01 ขอรหัสถี่เกิน แสดงข้อความของระบบ ลูกค้าใหม่ไปหน้าลงทะเบียน
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ PASS src/__tests__/UI-02-01.test.jsx (4 tests) 277ms
+ PASS src/__tests__/AC-07-20.test.jsx (4 tests) 311ms
+stderr | src/__tests__/AC-02-06.test.jsx > AC-02-06 ลูกค้าเข้าสู่ระบบแล้วเห็นเมนูของลูกค้าและชื่อของตัวเอง ออกจากระบบแล้วกลับหน้าเข้าสู่ระบบ
+An update to Login inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ PASS src/__tests__/AC-02-06.test.jsx (4 tests) 317ms
+ PASS src/__tests__/UI-07-01.test.jsx (4 tests) 264ms
+ PASS src/__tests__/AC-12-01.test.jsx (4 tests) 228ms
 stderr | src/__tests__/UI-07-02-DEF-01.test.jsx > UI-07-02 DEF-01 แตะช่วงใกล้เคียงแล้ว ระบบล็อกช่วงใหม่ และหน้ายืนยันบอกเวลาที่ล็อกไว้จากระบบ
 An update to App inside a test was not wrapped in act(...).
 
@@ -284,34 +444,38 @@ act(() => {
 
 This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
 
- PASS src/__tests__/UI-07-02-DEF-01.test.jsx (2 tests) 433ms
-   PASS UI-07-02 DEF-01 แตะช่วงใกล้เคียงแล้ว ระบบล็อกช่วงใหม่ และหน้ายืนยันบอกเวลาที่ล็อกไว้จากระบบ  307ms
- PASS src/__tests__/UI-09-01.test.jsx (3 tests) 140ms
- PASS src/__tests__/AC-07-04.test.jsx (1 test) 192ms
- PASS src/__tests__/UI-08-01.test.jsx (2 tests) 180ms
- PASS src/__tests__/AC-07-11.test.jsx (2 tests) 118ms
- PASS src/__tests__/UI-09-02.test.jsx (2 tests) 215ms
- PASS src/__tests__/AC-14-09.test.jsx (2 tests) 226ms
- PASS src/__tests__/UI-08-02.test.jsx (2 tests) 95ms
- PASS src/__tests__/AC-08-01.test.jsx (1 test) 159ms
- PASS src/__tests__/UI-14-01.test.jsx (2 tests) 184ms
- PASS src/__tests__/AC-07-06.test.jsx (1 test) 143ms
- PASS src/__tests__/AC-09-02.test.jsx (1 test) 159ms
- PASS src/__tests__/AC-08-06.test.jsx (1 test) 139ms
+ PASS src/__tests__/UI-07-02-DEF-01.test.jsx (2 tests) 516ms
+   PASS UI-07-02 DEF-01 แตะช่วงใกล้เคียงแล้ว ระบบล็อกช่วงใหม่ และหน้ายืนยันบอกเวลาที่ล็อกไว้จากระบบ  373ms
+ PASS src/__tests__/AC-07-12.test.jsx (2 tests) 228ms
+ PASS src/__tests__/UI-09-01.test.jsx (3 tests) 153ms
+ PASS src/__tests__/AC-07-04.test.jsx (1 test) 162ms
+ PASS src/__tests__/UI-08-01.test.jsx (2 tests) 175ms
+ PASS src/__tests__/UI-02-02.test.jsx (2 tests) 131ms
+ PASS src/__tests__/AC-07-11.test.jsx (2 tests) 109ms
+ PASS src/__tests__/UI-02-03.test.jsx (2 tests) 150ms
+ PASS src/__tests__/UI-09-02.test.jsx (2 tests) 159ms
+ PASS src/__tests__/AC-14-09.test.jsx (2 tests) 196ms
  PASS src/__tests__/AC-07-19.test.jsx (1 test) 163ms
- PASS src/__tests__/AC-07-14.test.jsx (1 test) 135ms
- PASS src/__tests__/AC-08-12.test.jsx (1 test) 122ms
- PASS src/__tests__/AC-09-05.test.jsx (1 test) 183ms
- PASS src/__tests__/AC-08-10.test.jsx (1 test) 122ms
- PASS src/__tests__/UI-07-03.test.jsx (1 test) 113ms
- PASS src/__tests__/AC-14-14.test.jsx (1 test) 92ms
- PASS src/__tests__/AC-08-11.test.jsx (1 test) 40ms
- PASS src/__tests__/AC-14-12.test.jsx (1 test) 119ms
+ PASS src/__tests__/UI-08-02.test.jsx (2 tests) 113ms
+ PASS src/__tests__/AC-08-01.test.jsx (1 test) 156ms
+ PASS src/__tests__/UI-14-01.test.jsx (2 tests) 174ms
+ PASS src/__tests__/AC-07-06.test.jsx (1 test) 120ms
+ PASS src/__tests__/AC-09-02.test.jsx (1 test) 142ms
+ PASS src/__tests__/AC-08-06.test.jsx (1 test) 126ms
+ PASS src/__tests__/AC-07-14.test.jsx (1 test) 175ms
+ PASS src/__tests__/UI-01-01.test.jsx (1 test) 158ms
+ PASS src/__tests__/AC-08-12.test.jsx (1 test) 169ms
+ PASS src/__tests__/AC-09-05.test.jsx (1 test) 127ms
+ PASS src/__tests__/AC-08-10.test.jsx (1 test) 134ms
+ PASS src/__tests__/UI-07-03.test.jsx (1 test) 106ms
+ PASS src/__tests__/AC-14-14.test.jsx (1 test) 99ms
+ PASS src/__tests__/AC-08-11.test.jsx (1 test) 45ms
+ PASS src/__tests__/AC-14-12.test.jsx (1 test) 134ms
 
- Test Files  25 passed (25)
-      Tests  42 passed (42)
-   Start at  13:40:47
-   Duration  23.77s (transform 536ms, setup 1.23s, collect 2.87s, tests 4.17s, environment 9.58s, prepare 1.96s)
+ Test Files  32 passed (32)
+      Tests  63 passed (63)
+   Start at  15:08:07
+   Duration  31.35s (transform 609ms, setup 1.63s, collect 3.70s, tests 5.71s, environment 12.99s, prepare 2.30s)
 
 # ---- eval ----
 prompt P-1.1: 20/20 เกณฑ์ผ่าน | เขียน /workspaces/eval.md และ eval.json
@@ -334,4 +498,4 @@ PASS AC-14-09 สรุปตรงกับค่าที่ส่ง API ท�
 PASS AC-14-09 หมวดเลื่อนนัด ทำตามที่คาดทุกข้อ: 60/60 (เกณฑ์ 60)
 PASS AC-14-13 ประเภทงานที่แย่สุด ต่ำกว่ากลุ่มที่ดีสุด (ใน 100 ไม่เกิน): 3.1/3 (เกณฑ์ 5)
 PASS AC-14-13 ลักษณะการพิมพ์ที่ถูกส่งต่อเพราะไม่แน่ใจบ่อยสุด (เท่าของค่ารวม ไม่เกิน): 0.0/3 (เกณฑ์ 2.0)
-PASS QAS-1 p95 เวลาตอบ (มิลลิวินาที ไม่เกิน) วัดกับ MockLLM: 9.82/290 (เกณฑ์ 4000.0)
+PASS QAS-1 p95 เวลาตอบ (มิลลิวินาที ไม่เกิน) วัดกับ MockLLM: 9.02/290 (เกณฑ์ 4000.0)

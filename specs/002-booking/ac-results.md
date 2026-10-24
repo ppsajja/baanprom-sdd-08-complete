@@ -140,3 +140,16 @@ pytest: 19 passed, 1 skipped | vitest: 14 passed (6 ไฟล์)
 ## รอบตรวจรับ R1 รอบสอง (16 พ.ย. 2569)
 
 ผลของ DEF-01 (UI-07-02) และผลทดสอบโหลดเต็มรูปของ AC-07-08 อยู่ในตารางรวมที่ specs/000-shared/ac-results.md ส่วน "รอบตรวจรับ R1 รอบสอง"
+
+## รอบ R2 ส่วน A (23 พ.ย. 2569 รันจริงจาก export สะอาด specs/000-shared/test-run.txt)
+
+| AC | REQ | test | ผล | หมายเหตุ |
+|---|---|---|---|---|
+| AC-07-01 ถึง AC-07-19 | | test เดิม | ผ่าน | test เดิมเปลี่ยนเฉพาะการบอกผู้ส่งตามตารางของ CR-11 รอบแรกก่อนแก้ test ไม่ผ่านเพราะ 401 (test-run-cr11-round1.txt) |
+| AC-07-02 | REQ-FN-008 | test_AC_07_02_slot_not_rebookable | ผ่าน | บรรทัด When ใหม่ (ค้นด้วยที่อยู่ของผู้ค้น) |
+| AC-07-08 (ย่อส่วน) | REQ-QA-003 | test_AC_07_08_search_under_load_scaled | ผ่าน | ตรวจถดถอย |
+| AC-07-08 (ฉบับ Q-68) | REQ-QA-003 | load_test.py --rate 50 --duration 300 | ผ่าน บนเครื่องทดสอบ | 15000 จาก 15000 p95 0.023 วินาที docs/acceptance/load-test-r2.md |
+| AC-07-20 ถึง AC-07-23 | REQ-FN-064 | test_booking_cr08.py | ผ่าน | |
+| AC-07-24 | REQ-FN-065 | test_AC_07_24_no_technician_in_7_days | ผ่าน | |
+| AC-07-20, 21, 24 (หน้าจอ) | REQ-FN-064, REQ-FN-065 | AC-07-20.test.jsx | ผ่าน | |
+| UI-07-01 รายการต้องตรงเดิม | | UI-07-01.test.jsx | ผ่าน | ไม่แก้ test |

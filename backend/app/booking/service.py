@@ -116,16 +116,19 @@ def _finish_payment(db, job: Job, slot: TimeSlot, customer: Customer, payment, n
         # รองรับ REQ-FN-008 ขั้น 6: งานยืนยันแล้ว ช่วงเวลาจองแล้ว
         set_status(db, job, "confirmed", now)
         slot.state, slot.held_by_customer_id, slot.hold_expires_at = SLOT_BOOKED, None, None
+        # CR-12 REQ-FN-061: มอบงานให้ช่าง ช่างต้องรับหรือปฏิเสธภายใน 30 นาที (UC-12)
+        from app.matching.service import offer
+        offer(db, job, now)
         # รองรับ REQ-FN-012: วางข้อความถึงสองฝ่ายลงคิว ไม่รอผลส่ง
-        queue.enqueue("customer", customer.id, f"จองสำเร็จ งาน #{job.id} {slot.start:%d/%m %H:%M}", job.id, now)
-        queue.enqueue("technician", slot.technician_id, f"มีงานใหม่ #{job.id} {slot.start:%d/%m %H:%M}", job.id, now)
+        queue.enqueue("customer", customer.id, f"จองสำเร็จ งาน #{job.id} {slot.start:%d/%m %H:%M}", job.id, now, db=db)
+        queue.enqueue("technician", slot.technician_id, f"มีงานใหม่ #{job.id} {slot.start:%d/%m %H:%M}", job.id, now, db=db)
         db.commit()
         return job
 
     # UC-07 E1 / BR-01 R5: ยกเลิกอัตโนมัติ ไม่มีการตัดเงิน ช่วงเวลากลับว่าง แจ้งลูกค้า
     set_status(db, job, "auto_cancelled", now)
     slot.state, slot.held_by_customer_id, slot.hold_expires_at = SLOT_FREE, None, None
-    queue.enqueue("customer", customer.id, f"ชำระมัดจำไม่สำเร็จ งาน #{job.id} ถูกยกเลิก", job.id, now)
+    queue.enqueue("customer", customer.id, f"ชำระมัดจำไม่สำเร็จ งาน #{job.id} ถูกยกเลิก", job.id, now, db=db)
     db.commit()
     raise PaymentFailed(job.id, payment.result)
 
@@ -225,7 +228,7 @@ def reschedule_job(db, job: Job, new_slot: TimeSlot, now: datetime, reference: s
     job.slot_id, job.scheduled_start = new_slot.id, new_slot.start
     db.add(record)                                                                                     # ลำดับ 3
     text = f"งาน #{job.id} เลื่อนนัดเป็น {new_slot.start:%d/%m %H:%M}"
-    queue.enqueue("customer", job.customer_id, text, job.id, now)                                     # ลำดับ 4
-    queue.enqueue("technician", job.technician_id, text, job.id, now)
+    queue.enqueue("customer", job.customer_id, text, job.id, now, db=db)                                     # ลำดับ 4
+    queue.enqueue("technician", job.technician_id, text, job.id, now, db=db)
     db.commit()
     return record

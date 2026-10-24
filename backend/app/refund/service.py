@@ -50,17 +50,18 @@ def note_for(d: Decision) -> str:
     return MSG_R3_NOTE if d.rule == "R3" and d.outcome == "cancelled" else ""
 
 
-def quote(job: Job, cancelled_by: str, now: datetime) -> Decision:
+def quote(job: Job, cancelled_by: str, now: datetime, substitute_declined: bool = False) -> Decision:
     """REQ-FN-054 (AC-08-01): ยอดคืนที่จะได้ถ้ายกเลิกตอนนี้ คิดจากตาราง BR-01 ตัวเดียวกับที่ใช้ยกเลิกจริง"""
-    return decide(job.status, cancelled_by, job.scheduled_start, now, job.deposit_amount)
+    return decide(job.status, cancelled_by, job.scheduled_start, now, job.deposit_amount, substitute_declined)
 
 
 def cancel_job(db, job: Job, cancelled_by: str, now: datetime,
-               gateway: Gateway | None = None) -> tuple[Decision, Refund | None]:
+               gateway: Gateway | None = None, substitute_declined: bool = False) -> tuple[Decision, Refund | None]:
     if job.status in ("cancelled", "auto_cancelled"):
         # AC-08-04: ยกเลิกซ้ำไม่ได้ และต้องไม่ส่งคำขอคืนเงินซ้ำ
         raise CancelRejected(Decision("R6", "not_allowed", None), MSG_ALREADY_CLOSED)
-    d = quote(job, cancelled_by, now)
+    d = quote(job, cancelled_by, now, substitute_declined)
+    was_rematching = job.status == "rematching"
     if d.outcome == "pending_question":
         raise CancelRejected(d, MSG_R3_PENDING)
     if d.outcome == "not_allowed":
@@ -91,11 +92,12 @@ def cancel_job(db, job: Job, cancelled_by: str, now: datetime,
     if refund is not None and refund.result == "declined":
         # CR-10 (Q-34): ห้ามบอกลูกค้าว่าคืนแล้ว เมื่อ gateway ปฏิเสธ
         refund_text = f" {MSG_REFUND_DECLINED}"
-    queue.enqueue("customer", job.customer_id, f"งาน #{job.id} ถูกยกเลิก{refund_text}", job.id, now)
+    queue.enqueue("customer", job.customer_id, f"งาน #{job.id} ถูกยกเลิก{refund_text}", job.id, now, db=db)
     tech_text = f"งาน #{job.id} ถูกยกเลิก ช่วงเวลากลับเป็นว่าง"
     if d.rule == "R3":
         # CR-10 (Q-14): ช่างรู้ว่าลูกค้ายกเลิกระหว่างเดินทาง ค่าเดินทางเหมาจ่ายผ่าน Finance (นอกระบบใน R1)
         tech_text = f"งาน #{job.id} ลูกค้ายกเลิกระหว่างที่คุณกำลังเดินทาง ได้ค่าเดินทาง {config.TRAVEL_FEE_BAHT} บาท ผ่าน Finance"
-    queue.enqueue("technician", job.technician_id, tech_text, job.id, now)
+    if not was_rematching:  # CR-12: ระหว่างหาช่างใหม่ ช่างคนเดิมปฏิเสธไปแล้วและได้ข้อความแล้ว ไม่ต้องแจ้งซ้ำ
+        queue.enqueue("technician", job.technician_id, tech_text, job.id, now, db=db)
     db.commit()
     return d, refund

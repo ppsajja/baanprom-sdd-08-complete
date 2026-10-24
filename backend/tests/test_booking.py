@@ -5,13 +5,14 @@ from sqlalchemy import select
 
 from app.db.models import Job, Payment, TimeSlot
 from app.notify.queue import queue
-from tests.conftest import NOW, TOMORROW_14, book
+from tests.conftest import NOW, TOMORROW_14, book, H
 
 
 # รองรับ AC-07-01 (REQ-FN-008)
 def test_AC_07_01_booking_success(client, db, seed, gateway):
     # Given ลูกค้าล็อกช่วงเวลา พรุ่งนี้ 14:00-16:00 ของช่าง ประสิทธิ์ ไว้
-    r = client.post(f"/slots/{seed['slot'].id}/hold?now={NOW.isoformat()}", json={"customer_id": seed["somchai"].id})
+    r = client.post(f"/slots/{seed['slot'].id}/hold?now={NOW.isoformat()}", json={"customer_id": seed["somchai"].id},
+                    headers=H("customer", seed["somchai"].id))
     assert r.status_code == 200
     # When ลูกค้ากดยืนยัน และ Payment Gateway ตอบ approved
     gateway.mode = "approved"
@@ -35,7 +36,9 @@ def test_AC_07_02_slot_not_rebookable(client, db, seed):
     res = book(client, customer_id=seed["somchai"].id, slot_id=seed["slot"].id, address_id=seed["addr"].id)
     assert res.status_code == 201
     # When ลูกค้าอีกคนค้นหาช่าง ประปา ที่ที่อยู่เดียวกัน
-    r = client.get(f"/technicians?category=ประปา&address_id={seed['addr'].id}&customer_id={seed['other'].id}&now={NOW.isoformat()}")
+    # CR-11: ลูกค้าอีกคนค้นด้วยที่อยู่ของตัวเอง (ที่อยู่ต้องเป็นของผู้ค้น) ที่อยู่ทั้งสองห่างกันราว 0.3 กม.
+    r = client.get(f"/technicians?category=ประปา&address_id={seed['addr_other'].id}&now={NOW.isoformat()}",
+                   headers=H("customer", seed["other"].id))
     assert r.status_code == 200
     # Then ผลค้นหาไม่มีช่วงเวลา พรุ่งนี้ 14:00-16:00 ของช่าง ประสิทธิ์ (และไม่มีช่าง ไกลมาก ตาม BR-03)
     offered = {(t["technician_id"], s["slot_id"]) for t in r.json() for s in t["slots"]}
@@ -61,7 +64,8 @@ def test_AC_07_03_notify_both_within_60s(client, db, seed):
 def test_AC_07_04_no_charge_when_slot_taken(client, db, seed, gateway):
     slot = seed["slot"]
     # Given ลูกค้า สมชาย เลือกช่วงเวลา 14:00-16:00 ของช่าง ประสิทธิ์ (ล็อกไว้แล้วแต่ล็อกหมดอายุ)
-    client.post(f"/slots/{slot.id}/hold?now={NOW.isoformat()}", json={"customer_id": seed["somchai"].id})
+    client.post(f"/slots/{slot.id}/hold?now={NOW.isoformat()}", json={"customer_id": seed["somchai"].id},
+                headers=H("customer", seed["somchai"].id))
     # And ลูกค้า คนอื่น จองช่วงเวลานั้นสำเร็จไปก่อน (หลังล็อกของสมชายหมดอายุ 10 นาที)
     later = NOW + timedelta(minutes=11)
     res_other = book(client, customer_id=seed["other"].id, slot_id=slot.id, address_id=seed["addr_other"].id, now=later)
